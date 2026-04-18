@@ -1280,7 +1280,7 @@ function NotificacoesScreen({ perfil }) {
 function NumberStepper({ value, onChange, min = 40, max = 300, step = 0.5, unit = 'kg' }) {
   const dec = () => onChange(Math.max(min, parseFloat((+value - step).toFixed(1))));
   const inc = () => onChange(Math.min(max, parseFloat((+value + step).toFixed(1))));
-  const btnStyle = { width: 64, height: 64, borderRadius: '50%', border: '2px solid #EDE6DC', background: 'white', fontSize: 30, fontWeight: 300, cursor: 'pointer', color: 'var(--brown)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', flexShrink: 0, lineHeight: 1 };
+  const btnStyle = { width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--copper-pale)', background: 'white', fontSize: 30, fontWeight: 300, cursor: 'pointer', color: 'var(--brown)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 14px rgba(196,136,90,0.18)', flexShrink: 0, lineHeight: 1 };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '12px 0', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
@@ -1347,63 +1347,67 @@ function OnboardingScreen({ onComplete }) {
   ];
 
   const CheckCircle = ({ on }) => (
-    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : '#CCC4BA'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : 'rgba(45,31,20,0.18)'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
       {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
     </div>
   );
   const CheckSquare = ({ on }) => (
-    <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : '#CCC4BA'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+    <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : 'rgba(45,31,20,0.18)'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
       {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
     </div>
   );
   const OBHeader = ({ title, subtitle }) => (
-    <div style={{ padding: '52px 24px 18px', background: 'white', flexShrink: 0 }}>
-      <div style={{ height: 4, background: '#EDE6DC', borderRadius: 2, marginBottom: 20, overflow: 'hidden' }}>
+    <div style={{ padding: '52px 24px 18px', background: 'var(--cream-light)', flexShrink: 0 }}>
+      <div style={{ height: 4, background: 'rgba(45,31,20,0.1)', borderRadius: 2, marginBottom: 20, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--copper) 0%, var(--copper-light) 100%)', borderRadius: 2, transition: 'width .4s ease' }} />
       </div>
-      <button onClick={back} style={{ width: 36, height: 36, borderRadius: '50%', background: '#F5F0EC', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginBottom: 18 }}>
-        <Icon name="arrow-left" size={18} color="#5A3E28" strokeWidth={2.2} />
+      <button onClick={back} style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(196,136,90,0.12)', border: '1.5px solid rgba(196,136,90,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginBottom: 18 }}>
+        <Icon name="arrow-left" size={18} color="var(--brown-light)" strokeWidth={2.2} />
       </button>
-      <h2 style={{ fontSize: 27, fontWeight: 800, color: '#1A1008', margin: '0 0 8px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>{title}</h2>
-      {subtitle && <p style={{ fontSize: 14, color: '#9A8070', margin: 0, lineHeight: 1.5 }}>{subtitle}</p>}
+      <h2 style={{ fontSize: 27, fontWeight: 800, color: 'var(--brown)', margin: '0 0 8px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>{title}</h2>
+      {subtitle && <p style={{ fontSize: 14, color: 'var(--brown-light)', margin: 0, lineHeight: 1.5, opacity: 0.7 }}>{subtitle}</p>}
     </div>
   );
   const OptionRow = ({ selected, onClick, icon, label, sublabel }) => (
-    <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderRadius: 14, border: `2px solid ${selected ? 'var(--copper)' : '#EDE6DC'}`, background: selected ? 'rgba(196,136,90,0.06)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}>
+    <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderRadius: 14, border: `2px solid ${selected ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: selected ? 'rgba(196,136,90,0.1)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', boxShadow: selected ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
       {icon && <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{icon}</span>}
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: selected ? 'var(--copper)' : '#1A1008', fontSize: 15, lineHeight: 1.3 }}>{label}</div>
-        {sublabel && <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>{sublabel}</div>}
+        <div style={{ fontWeight: 600, color: selected ? 'var(--brown)' : 'var(--brown)', fontSize: 15, lineHeight: 1.3 }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 12, color: 'var(--brown-light)', marginTop: 2, opacity: 0.65 }}>{sublabel}</div>}
       </div>
       <CheckCircle on={selected} />
     </button>
   );
   const OBFooter = ({ onPress, disabled = false, label = 'Continuar' }) => (
-    <div style={{ padding: '14px 24px 36px', background: 'white', borderTop: '1px solid #F0E8DE', flexShrink: 0 }}>
+    <div style={{ padding: '14px 24px 36px', background: 'var(--cream-light)', borderTop: '1px solid rgba(196,136,90,0.18)', flexShrink: 0 }}>
       <button className="btn-primary" onClick={onPress} disabled={disabled} style={{ opacity: disabled ? 0.38 : 1 }}>{label}</button>
     </div>
   );
   const Wrap = ({ children }) => (
-    <div style={{ position: 'absolute', inset: 0, background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>{children}</div>
+    <div style={{ position: 'absolute', inset: 0, background: 'var(--cream-light)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>{children}</div>
   );
 
   /* ── Step 0: Splash ── */
   if (step === 0) return (
     <Wrap>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px 24px', textAlign: 'center', background: 'linear-gradient(180deg, #FBF7F3 0%, white 60%)' }}>
-        <div style={{ width: 96, height: 96, borderRadius: 26, background: 'linear-gradient(135deg, var(--copper-pale) 0%, rgba(196,136,90,0.12) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 24, boxShadow: '0 8px 32px rgba(196,136,90,0.22)' }}>🌿</div>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--brown)', margin: '0 0 12px', lineHeight: 1.15, letterSpacing: '-1px' }}>Renove GLP-1</h1>
-        <p style={{ color: '#9A8070', fontSize: 15, margin: '0 0 36px', lineHeight: 1.65, maxWidth: 270 }}>Controle suas aplicações, acompanhe seu progresso e transforme sua jornada.</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320 }}>
+      {/* Topo dark — mesmo estilo do header do app */}
+      <div className="header-grad" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 32px 36px', textAlign: 'center' }}>
+        <div style={{ width: 96, height: 96, borderRadius: 26, background: 'rgba(196,136,90,0.2)', border: '2px solid rgba(196,136,90,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>🌿</div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--cream)', margin: '0 0 12px', lineHeight: 1.15, letterSpacing: '-1px' }}>Renove GLP-1</h1>
+        <p style={{ color: 'rgba(245,237,227,0.65)', fontSize: 15, margin: 0, lineHeight: 1.65, maxWidth: 270 }}>Controle suas aplicações, acompanhe seu progresso e transforme sua jornada.</p>
+      </div>
+      {/* Cards de features — fundo cream */}
+      <div style={{ background: 'var(--cream-light)', padding: '24px 24px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[{ icon: '💉', t: 'Lembretes de aplicação semanais' }, { icon: '⚖️', t: 'Histórico de peso e metas' }, { icon: '🤖', t: 'Assistente Rê sempre disponível' }].map(f => (
-            <div key={f.t} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', background: 'white', borderRadius: 12, border: '1px solid #EDE6DC', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', textAlign: 'left' }}>
-              <span style={{ fontSize: 18, flexShrink: 0 }}>{f.icon}</span>
-              <span style={{ color: 'var(--brown)', fontSize: 13, fontWeight: 500 }}>{f.t}</span>
+            <div key={f.t} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'white', borderRadius: 12, border: '1px solid rgba(196,136,90,0.15)', boxShadow: '0 1px 6px rgba(45,31,20,0.05)', textAlign: 'left' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{f.icon}</div>
+              <span style={{ color: 'var(--brown)', fontSize: 13, fontWeight: 600 }}>{f.t}</span>
             </div>
           ))}
         </div>
       </div>
-      <div style={{ padding: '16px 24px 40px', background: 'white', borderTop: '1px solid #F0E8DE' }}>
+      <div style={{ padding: '20px 24px 40px', background: 'var(--cream-light)', borderTop: 'none' }}>
         <button className="btn-primary" onClick={next}>Começar →</button>
       </div>
     </Wrap>
@@ -1428,8 +1432,8 @@ function OnboardingScreen({ onComplete }) {
       <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
         <input value={dados.nome} onChange={e => set('nome', e.target.value)}
           placeholder="Seu primeiro nome" autoFocus
-          style={{ width: '100%', padding: '16px 18px', borderRadius: 14, fontSize: 18, border: `2px solid ${dados.nome ? 'var(--copper)' : '#EDE6DC'}`, background: 'white', color: 'var(--brown)', fontFamily: 'inherit', fontWeight: 600, outline: 'none', transition: 'border-color .2s', boxSizing: 'border-box' }} />
-        <p style={{ color: '#9A8070', fontSize: 12, margin: '12px 0 0', lineHeight: 1.5 }}>🔒 Seus dados ficam apenas no seu aparelho</p>
+          style={{ width: '100%', padding: '16px 18px', borderRadius: 14, fontSize: 18, border: `2px solid ${dados.nome ? 'var(--copper)' : 'rgba(45,31,20,0.12)'}`, background: 'white', color: 'var(--brown)', fontFamily: 'inherit', fontWeight: 600, outline: 'none', transition: 'border-color .2s', boxSizing: 'border-box', boxShadow: '0 1px 4px rgba(45,31,20,0.05)' }} />
+        <p style={{ color: 'var(--brown-light)', fontSize: 12, margin: '12px 0 0', lineHeight: 1.5, opacity: 0.7 }}>🔒 Seus dados ficam apenas no seu aparelho</p>
       </div>
       <OBFooter onPress={next} disabled={!dados.nome.trim()} />
     </Wrap>
@@ -1468,10 +1472,10 @@ function OnboardingScreen({ onComplete }) {
       <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
         <input type="date" value={dados.dataInicio} onChange={e => set('dataInicio', e.target.value)}
           max={new Date().toISOString().split('T')[0]}
-          style={{ width: '100%', padding: '16px', borderRadius: 14, fontSize: 16, border: '2px solid var(--copper)', background: 'white', color: 'var(--brown)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-        <div style={{ marginTop: 16, padding: '14px 16px', background: '#FBF5EE', borderRadius: 12, border: '1px solid #EDE0CE', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          style={{ width: '100%', padding: '16px', borderRadius: 14, fontSize: 16, border: '2px solid var(--copper)', background: 'white', color: 'var(--brown)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', boxShadow: '0 2px 8px rgba(196,136,90,0.15)' }} />
+        <div style={{ marginTop: 16, padding: '14px 16px', background: 'var(--copper-pale)', borderRadius: 12, border: '1px solid rgba(196,136,90,0.3)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-          <p style={{ color: '#7A5C3A', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+          <p style={{ color: 'var(--brown)', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
             {dados.status === 'iniciando' ? 'Ainda vai começar? Selecione hoje. Você poderá ajustar depois.' : 'Insira a data da sua primeira dose para calcular as próximas aplicações.'}
           </p>
         </div>
@@ -1522,9 +1526,9 @@ function OnboardingScreen({ onComplete }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
         <NumberStepper value={dados.meta} onChange={v => set('meta', Math.min(v, Math.max(40, dados.pesoAtual - 0.5)))} min={40} max={Math.max(41, dados.pesoAtual - 0.5)} step={0.5} unit="kg" />
         {dados.pesoAtual > dados.meta && (
-          <div style={{ background: '#F5F0EC', borderRadius: 14, padding: '12px 32px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--copper-pale)', borderRadius: 14, padding: '12px 32px', textAlign: 'center', border: '1px solid rgba(196,136,90,0.3)' }}>
             <div style={{ color: 'var(--copper)', fontWeight: 800, fontSize: 24 }}>−{(dados.pesoAtual - dados.meta).toFixed(1)} kg</div>
-            <div style={{ color: '#9A8070', fontSize: 12, marginTop: 2 }}>meta de perda de peso</div>
+            <div style={{ color: 'var(--brown-light)', fontSize: 12, marginTop: 2 }}>meta de perda de peso</div>
           </div>
         )}
       </div>
@@ -1540,9 +1544,9 @@ function OnboardingScreen({ onComplete }) {
         {objetivos.map(o => {
           const sel = dados.objetivos.includes(o.id);
           return (
-            <button key={o.id} onClick={() => toggleObj(o.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${sel ? 'var(--copper)' : '#EDE6DC'}`, background: sel ? 'rgba(196,136,90,0.06)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%' }}>
+            <button key={o.id} onClick={() => toggleObj(o.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${sel ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: sel ? 'rgba(196,136,90,0.1)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%', boxShadow: sel ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
               <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{o.icon}</span>
-              <span style={{ flex: 1, fontWeight: 600, color: sel ? 'var(--copper)' : '#1A1008', fontSize: 15 }}>{o.label}</span>
+              <span style={{ flex: 1, fontWeight: 600, color: 'var(--brown)', fontSize: 15 }}>{o.label}</span>
               <CheckSquare on={sel} />
             </button>
           );
@@ -1559,12 +1563,13 @@ function OnboardingScreen({ onComplete }) {
     return (
       <Wrap>
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <div style={{ padding: '52px 24px 24px', textAlign: 'center', borderBottom: '1px solid #F0E8DE', background: 'white' }}>
-            <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'linear-gradient(135deg, var(--copper-pale), rgba(196,136,90,0.15))', border: '3px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>🎯</div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--brown)', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Seu Plano Personalizado</h2>
-            <p style={{ color: '#9A8070', fontSize: 14, margin: 0 }}>Tudo pronto, {dados.nome || 'você'}! Aqui está seu resumo:</p>
+          {/* Header do plano — usa o dark gradient do app */}
+          <div className="header-grad" style={{ padding: '52px 24px 32px', textAlign: 'center' }}>
+            <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(196,136,90,0.2)', border: '3px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>🎯</div>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--cream)', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Seu Plano Personalizado</h2>
+            <p style={{ color: 'rgba(245,237,227,0.65)', fontSize: 14, margin: 0 }}>Tudo pronto, {dados.nome || 'você'}! Aqui está seu resumo:</p>
           </div>
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10, background: '#FBF7F3' }}>
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--cream-light)' }}>
             {[
               { label: 'Medicamento', valor: medLabel, icon: '💊' },
               { label: 'Dose atual', valor: dados.dose, icon: '📏' },
@@ -1573,15 +1578,15 @@ function OnboardingScreen({ onComplete }) {
               { label: 'Meta de peso', valor: `${dados.meta} kg`, icon: '🎯' },
               { label: 'Perda esperada', valor: `−${perda} kg`, icon: '📉' },
             ].map(item => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'white', borderRadius: 12, border: '1px solid #F0E8DE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'white', borderRadius: 12, border: '1px solid rgba(196,136,90,0.12)', boxShadow: '0 1px 4px rgba(45,31,20,0.05)' }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
-                <span style={{ flex: 1, color: '#9A8070', fontSize: 14 }}>{item.label}</span>
+                <span style={{ flex: 1, color: 'var(--brown-light)', fontSize: 14, opacity: 0.75 }}>{item.label}</span>
                 <span style={{ color: 'var(--brown)', fontWeight: 700, fontSize: 15 }}>{item.valor}</span>
               </div>
             ))}
           </div>
         </div>
-        <div style={{ padding: '16px 24px 40px', background: 'white', borderTop: '1px solid #F0E8DE', flexShrink: 0 }}>
+        <div style={{ padding: '16px 24px 40px', background: 'var(--cream-light)', borderTop: '1px solid rgba(196,136,90,0.18)', flexShrink: 0 }}>
           <button className="btn-primary" onClick={salvar}>Começar minha jornada 🌿</button>
         </div>
       </Wrap>
