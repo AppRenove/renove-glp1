@@ -720,22 +720,29 @@ function ReScreen() {
     setHistorico(novoHistorico);
 
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: SISTEMA_RE },
-            ...novoHistorico,
-          ],
-          max_tokens: 400,
-          temperature: 0.7,
-        }),
-      });
+      // Se tiver chave local (dev), chama OpenAI direto.
+      // Em produção (Vercel), usa o proxy seguro /api/chat.
+      const payload = {
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SISTEMA_RE },
+          ...novoHistorico,
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+      };
+
+      const res = OPENAI_KEY
+        ? await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_KEY}` },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
       const data = await res.json();
 
