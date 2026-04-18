@@ -219,9 +219,9 @@ function HomeScreen({ setTab, perfil }) {
             <button onClick={() => setTab('notificacoes')} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(196,136,90,0.15)', border: '1.5px solid rgba(196,136,90,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name="bell" size={19} color="rgba(245,237,227,0.8)" strokeWidth={1.8} />
             </button>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => setTab('perfil')} style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name="user" size={22} color="var(--copper)" strokeWidth={1.8} />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -298,23 +298,52 @@ function HomeScreen({ setTab, perfil }) {
           </div>
         </div>
 
-        {/* Como você está hoje? */}
-        <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Como você está hoje? 🌡️</div>
-          <div className="flex gap-2">
-            {[
-              { emoji: '😊', label: 'Bem', cor: 'var(--green)', bg: '#E8F8EE' },
-              { emoji: '😐', label: 'Regular', cor: 'var(--yellow)', bg: '#FFF8E0' },
-              { emoji: '😣', label: 'Mal', cor: 'var(--red)', bg: '#FDECEA' },
-            ].map(op => (
-              <button key={op.label} onClick={() => setTab('diario')}
-                style={{ flex: 1, background: op.bg, border: `1.5px solid ${op.cor}30`, borderRadius: 12, padding: '12px 8px', cursor: 'pointer', textAlign: 'center' }}>
-                <div style={{ fontSize: 22, marginBottom: 3 }}>{op.emoji}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: op.cor }}>{op.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Seu dia de hoje */}
+        {(() => {
+          const todayISO = new Date().toISOString().split('T')[0];
+          let diarioHoje = false;
+          try { const d = JSON.parse(localStorage.getItem('renove_diario') || '{}'); diarioHoje = !!d[todayISO]; } catch {}
+          let aplicacaoSemana = false;
+          try {
+            const apps = JSON.parse(localStorage.getItem('renove_aplicacoes') || '[]');
+            const inicioSem = new Date(dataInicioDate);
+            inicioSem.setDate(dataInicioDate.getDate() + semanaAtual * 7);
+            const fimSem = new Date(inicioSem); fimSem.setDate(inicioSem.getDate() + 7);
+            aplicacaoSemana = apps.some(a => { const d = new Date(a.ts); return d >= inicioSem && d < fimSem; });
+          } catch {}
+          let pesoSemana = false;
+          try {
+            const pesos = JSON.parse(localStorage.getItem('renove_pesos') || '[]');
+            const umaSemanaAtras = new Date(); umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
+            pesoSemana = pesos.some(p => new Date(p.data) >= umaSemanaAtras);
+          } catch {}
+          const checks = [
+            { label: 'Diário de hoje', feito: diarioHoje, tab: 'diario', icon: '📔' },
+            { label: 'Aplicação semanal', feito: aplicacaoSemana, tab: 'planejador', icon: '💉' },
+            { label: 'Peso desta semana', feito: pesoSemana, tab: 'peso', icon: '⚖️' },
+          ];
+          const total = checks.filter(c => c.feito).length;
+          return (
+            <div className="card">
+              <div className="flex items-center justify-between mb-3">
+                <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Seu dia de hoje</div>
+                <span className="pill" style={{ background: total === 3 ? '#E8F8EE' : 'var(--copper-pale)', color: total === 3 ? '#2E7D52' : 'var(--brown-light)', fontWeight: 700 }}>{total}/3 ✓</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {checks.map(c => (
+                  <button key={c.label} onClick={() => setTab(c.tab)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 11,
+                      background: c.feito ? '#E8F8EE' : '#F8F4F0', border: `1.5px solid ${c.feito ? '#2E7D52' : 'rgba(45,31,20,0.08)'}`,
+                      cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}>
+                    <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{c.feito ? '✅' : c.icon}</span>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: c.feito ? '#2E7D52' : 'var(--brown)' }}>{c.label}</span>
+                    {!c.feito && <span style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 600 }}>Fazer →</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Peso */}
         <div className="card">
@@ -342,7 +371,6 @@ function HomeScreen({ setTab, perfil }) {
           {[
             { icon: 'target',          label: 'Calculadora\nCorporal', tab: 'calculadora', bg: '#F0EBF8', cor: '#7B5EA7' },
             { icon: 'message-circle',  label: 'Perguntar\npara a Rê',  tab: 'rê',          bg: '#E8F4FD', cor: '#2E86C1' },
-            { icon: 'activity',        label: 'Espaço\nde Fotos',      tab: 'fotos',        bg: '#E8F8EE', cor: '#2E7D52' },
           ].map(a => (
             <button key={a.tab} onClick={() => setTab(a.tab)}
               style={{ flex: 1, background: 'white', borderRadius: 16, padding: '16px 8px', boxShadow: '0 2px 14px rgba(45,31,20,0.07)', cursor: 'pointer', border: '1px solid rgba(45,31,20,0.04)', textAlign: 'center' }}>
@@ -359,120 +387,240 @@ function HomeScreen({ setTab, perfil }) {
 }
 
 /* ─── TELA: PLANEJADOR ───────────────────────────────────── */
-function PlanejadorScreen() {
-  const [aplicado, setAplicado] = useState(false);
-  const [local, setLocal] = useState(0);
-  const historico = [
-    { data: '10/04', local: 'Abdômen esquerdo', dose: '5mg' },
-    { data: '03/04', local: 'Coxa direita', dose: '5mg' },
-    { data: '27/03', local: 'Abdômen direito', dose: '5mg' },
-    { data: '20/03', local: 'Coxa esquerda', dose: '2,5mg' },
-  ];
+function PlanejadorScreen({ perfil }) {
+  // ── Aplicações salvas no localStorage ──
+  const [aplicacoes, setAplicacoes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_aplicacoes') || '[]'); } catch { return []; }
+  });
+  const [showModal, setShowModal] = useState(false);
+  const [localSel, setLocalSel] = useState(0);
+  const [doseInput, setDoseInput] = useState('');
 
-  const dias = [
-    { letra: 'S', num: 14, passado: true, aplicacao: false },
-    { letra: 'T', num: 15, passado: true, aplicacao: false },
-    { letra: 'Q', num: 16, passado: true, aplicacao: false },
-    { letra: 'Q', num: 17, passado: false, hoje: true, aplicacao: false },
-    { letra: 'S', num: 18, passado: false, aplicacao: false },
-    { letra: 'S', num: 19, passado: false, aplicacao: false },
-    { letra: 'D', num: 20, passado: false, aplicacao: true },
-  ];
+  // ── Calcular datas ──
+  const hoje = new Date();
+  const dataInicio = perfil?.dataInicio ? new Date(perfil.dataInicio) : null;
+  const dosePerfil = perfil?.dose || '';
+
+  let diasJornada = 0, semanaAtual = 0, proxData = null, diasRest = null;
+  if (dataInicio) {
+    diasJornada = Math.floor((hoje - dataInicio) / 86400000);
+    semanaAtual = Math.floor(diasJornada / 7);
+    proxData = new Date(dataInicio);
+    proxData.setDate(dataInicio.getDate() + (semanaAtual + 1) * 7);
+    diasRest = Math.ceil((proxData - hoje) / 86400000);
+  }
+
+  // ── Verificar se já aplicou esta semana ──
+  const inicioSemana = dataInicio ? new Date(dataInicio) : null;
+  if (inicioSemana) inicioSemana.setDate(dataInicio.getDate() + semanaAtual * 7);
+  const fimSemana = inicioSemana ? new Date(inicioSemana) : null;
+  if (fimSemana) fimSemana.setDate(inicioSemana.getDate() + 7);
+
+  const aplicacaoSemana = aplicacoes.find(a => {
+    const d = new Date(a.ts);
+    return inicioSemana && fimSemana && d >= inicioSemana && d < fimSemana;
+  });
+
+  // ── Rodízio inteligente ──
+  const ultimoLocal = aplicacoes.length > 0 ? aplicacoes[aplicacoes.length - 1].local : null;
+  const sugIdx = ultimoLocal
+    ? (LOCAIS.indexOf(ultimoLocal) + 1) % LOCAIS.length
+    : 0;
+
+  // ── Calendário da semana atual ──
+  const diaSemana = hoje.getDay();
+  const inicioSem7 = new Date(hoje);
+  inicioSem7.setDate(hoje.getDate() - diaSemana);
+  const letras = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  const mesesPT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const diasCal = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(inicioSem7);
+    d.setDate(inicioSem7.getDate() + i);
+    const isHoje = d.toDateString() === hoje.toDateString();
+    const passado = d < hoje && !isHoje;
+    const isInjecao = proxData && d.toDateString() === proxData.toDateString();
+    const foiAplicado = aplicacoes.some(a => new Date(a.ts).toDateString() === d.toDateString());
+    return { letra: letras[i], num: d.getDate(), passado, isHoje, isInjecao, foiAplicado };
+  });
+
+  // ── Formatters ──
+  const diasSemPT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const fmtData = (d) => d ? `${diasSemPT[d.getDay()]}, ${d.getDate()}/${String(d.getMonth()+1).padStart(2,'0')}` : '–';
+  const fmtDataHist = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; };
+
+  // ── Registrar ──
+  const registrar = () => {
+    const nova = {
+      data: hoje.toISOString().split('T')[0],
+      local: LOCAIS[localSel],
+      dose: doseInput || dosePerfil || '–',
+      ts: new Date().toISOString(),
+    };
+    const novas = [...aplicacoes, nova];
+    setAplicacoes(novas);
+    localStorage.setItem('renove_aplicacoes', JSON.stringify(novas));
+    setShowModal(false);
+  };
+
+  const janelaValida = diasRest !== null && diasRest <= 4;
+  const historico = [...aplicacoes].reverse().slice(0, 8);
 
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Planejador 💉</h2>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Planejador</h2>
         <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Sua picadinha semanal</p>
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-4">
         {/* Countdown */}
-        <div className="card" style={{ background: 'linear-gradient(135deg, var(--brown) 0%, var(--brown-mid) 100%)', color: 'white' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Próxima aplicação</p>
-              <p style={{ color: 'var(--cream)', fontSize: 28, fontWeight: 800, margin: '4px 0' }}>Domingo, 20/04</p>
-              <span className="pill" style={{ background: 'rgba(196,136,90,0.25)', color: 'var(--copper-light)', marginTop: 4, display: 'inline-flex' }}>⏰ 3 dias restantes</span>
+        {dataInicio ? (
+          <div className="card" style={{ background: 'linear-gradient(135deg, var(--brown) 0%, var(--brown-mid) 100%)', color: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Próxima aplicação</p>
+                <p style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 800, margin: '4px 0' }}>{fmtData(proxData)}</p>
+                <span className="pill" style={{ background: 'rgba(196,136,90,0.25)', color: 'var(--copper-light)', marginTop: 4, display: 'inline-flex' }}>
+                  {diasRest > 0 ? `⏰ ${diasRest} dia${diasRest !== 1 ? 's' : ''} restante${diasRest !== 1 ? 's' : ''}` : diasRest === 0 ? '📍 Hoje!' : '⚠️ Atrasado'}
+                </span>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--copper-light)', lineHeight: 1 }}>{diasRest > 0 ? diasRest : 0}</div>
+                <div style={{ fontSize: 11, color: 'rgba(245,237,227,0.5)' }}>dias</div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--copper-light)', lineHeight: 1 }}>3</div>
-              <div style={{ fontSize: 11, color: 'rgba(245,237,227,0.5)' }}>dias</div>
-            </div>
+            {janelaValida && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(196,136,90,0.15)', borderRadius: 10, fontSize: 13, color: 'rgba(245,237,227,0.8)' }}>
+                🕐 Janela aberta — você pode aplicar agora!
+              </div>
+            )}
           </div>
-          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(196,136,90,0.15)', borderRadius: 10, fontSize: 13, color: 'rgba(245,237,227,0.8)' }}>
-            🕐 Janela válida até 24/04 (4 dias de tolerância)
+        ) : (
+          <div className="card" style={{ textAlign: 'center', padding: 24 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Complete seu perfil</div>
+            <div style={{ color: '#9A8070', fontSize: 13, marginTop: 4 }}>Informe a data de início para ver o planejamento.</div>
           </div>
-        </div>
+        )}
 
         {/* Mini calendário */}
         <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Semana atual — Abril 2025</div>
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>
+            Semana de {diasCal[0].num}/{String(hoje.getMonth()+1).padStart(2,'0')} — {mesesPT[hoje.getMonth()]}
+          </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            {dias.map((d, i) => (
+            {diasCal.map((d, i) => (
               <div key={i} style={{
                 flex: 1, textAlign: 'center', borderRadius: 10, padding: '8px 4px',
-                background: d.aplicacao ? 'var(--copper)' : d.hoje ? 'var(--copper-pale)' : d.passado ? '#F5F0EC' : 'white',
-                border: d.hoje ? '2px solid var(--copper)' : '2px solid transparent',
+                background: d.foiAplicado ? 'var(--copper)' : d.isInjecao ? '#FFF3E0' : d.isHoje ? 'var(--copper-pale)' : d.passado ? '#F5F0EC' : 'white',
+                border: d.isHoje ? '2px solid var(--copper)' : d.isInjecao ? '2px solid var(--copper)' : '2px solid transparent',
               }}>
-                <div style={{ fontSize: 10, color: d.aplicacao ? 'rgba(255,255,255,0.7)' : '#9A8070', marginBottom: 3 }}>{d.letra}</div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: d.aplicacao ? 'white' : d.hoje ? 'var(--copper)' : 'var(--brown)' }}>{d.num}</div>
-                {d.aplicacao && <div style={{ fontSize: 16, marginTop: 2 }}>💉</div>}
-                {d.hoje && <div style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--copper)', margin: '3px auto 0' }} />}
+                <div style={{ fontSize: 10, color: d.foiAplicado ? 'rgba(255,255,255,0.7)' : '#9A8070', marginBottom: 3 }}>{d.letra}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: d.foiAplicado ? 'white' : d.isHoje ? 'var(--copper)' : 'var(--brown)' }}>{d.num}</div>
+                {d.foiAplicado && <div style={{ fontSize: 14, marginTop: 2 }}>💉</div>}
+                {d.isInjecao && !d.foiAplicado && <div style={{ fontSize: 14, marginTop: 2 }}>📍</div>}
+                {d.isHoje && !d.foiAplicado && !d.isInjecao && <div style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--copper)', margin: '3px auto 0' }} />}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Rodízio de local */}
-        <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>Local sugerido para próxima aplicação</div>
-          <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 12px' }}>Baseado no rodízio automático</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {LOCAIS.map((l, i) => (
-              <button key={l} onClick={() => setLocal(i)}
-                style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  background: local === i ? 'var(--copper)' : '#F5F0EC',
-                  color: local === i ? 'white' : 'var(--brown-light)',
-                  border: 'none', transition: 'all .15s'
-                }}>{l}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Botão registrar */}
-        {!aplicado ? (
-          <button className="btn-primary" onClick={() => setAplicado(true)} style={{ fontSize: 16, padding: '16px' }}>
-            ✅ Registrar aplicação de hoje
-          </button>
-        ) : (
+        {/* Rodízio / botão registrar */}
+        {aplicacaoSemana ? (
           <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 6 }}>🎉</div>
-            <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 16 }}>Aplicação registrada!</div>
-            <div style={{ color: '#4CAF7A', fontSize: 13, marginTop: 4 }}>Local: {LOCAIS[local]} · Dose: 5mg</div>
+            <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+            <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 15 }}>Aplicação da semana registrada!</div>
+            <div style={{ color: '#4CAF7A', fontSize: 13, marginTop: 4 }}>
+              Local: {aplicacaoSemana.local} · Dose: {aplicacaoSemana.dose}
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="card">
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>Local sugerido pelo rodízio</div>
+              <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 12px' }}>
+                {ultimoLocal ? `Último: ${ultimoLocal}` : 'Ainda sem histórico — começando pelo abdômen'}
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {LOCAIS.map((l, i) => (
+                  <button key={l}
+                    style={{
+                      padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'default',
+                      background: sugIdx === i ? 'var(--copper)' : '#F5F0EC',
+                      color: sugIdx === i ? 'white' : 'var(--brown-light)',
+                      border: 'none',
+                    }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {janelaValida ? (
+              <button className="btn-primary" onClick={() => { setLocalSel(sugIdx); setDoseInput(dosePerfil); setShowModal(true); }} style={{ fontSize: 16, padding: '16px' }}>
+                💉 Registrar aplicação
+              </button>
+            ) : dataInicio ? (
+              <div style={{ background: 'var(--copper-pale)', borderRadius: 14, padding: '14px 16px', textAlign: 'center', color: '#8A7060', fontSize: 14 }}>
+                A janela de aplicação abre em {Math.max(0, (diasRest || 0) - 4)} dia{(diasRest || 0) - 4 !== 1 ? 's' : ''}
+              </div>
+            ) : null}
+          </>
         )}
 
         {/* Histórico */}
         <div>
           <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico de aplicações</div>
-          <div className="flex flex-col gap-2">
-            {historico.map((h, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
-                <div className="flex items-center gap-3">
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>💉</div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>{h.local}</div>
-                    <div style={{ fontSize: 12, color: '#9A8070' }}>{h.data}</div>
+          {historico.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#9A8070', fontSize: 14, padding: '20px 0' }}>Nenhuma aplicação registrada ainda.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {historico.map((h, i) => (
+                <div key={i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                  <div className="flex items-center gap-3">
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>💉</div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>{h.local}</div>
+                      <div style={{ fontSize: 12, color: '#9A8070' }}>{fmtDataHist(h.ts)}</div>
+                    </div>
                   </div>
+                  <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)' }}>{h.dose}</span>
                 </div>
-                <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)' }}>{h.dose}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modal de registro */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(45,31,20,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
+          <div style={{ background: 'var(--cream-light)', borderRadius: '20px 20px 0 0', padding: '24px 20px 32px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 18, marginBottom: 4 }}>Registrar aplicação</div>
+            <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 20px' }}>Confirme os dados da aplicação de hoje</p>
+
+            <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14, marginBottom: 8 }}>Local de aplicação</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {LOCAIS.map((l, i) => (
+                <button key={l} onClick={() => setLocalSel(i)}
+                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: localSel === i ? 'var(--copper)' : '#F0EBE5', color: localSel === i ? 'white' : 'var(--brown-light)', border: 'none' }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14, marginBottom: 8 }}>Dose aplicada</div>
+            <input
+              type="text"
+              value={doseInput}
+              onChange={e => setDoseInput(e.target.value)}
+              placeholder={dosePerfil || 'Ex: 5mg, 2,5mg'}
+              style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1.5px solid rgba(45,31,20,0.2)', fontSize: 15, color: 'var(--brown)', background: 'white', boxSizing: 'border-box', marginBottom: 20 }}
+            />
+
+            <button className="btn-primary" onClick={registrar} style={{ marginBottom: 10 }}>Confirmar aplicação ✅</button>
+            <button onClick={() => setShowModal(false)} style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'transparent', color: '#9A8070', fontSize: 15, cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1111,6 +1259,157 @@ function FotosScreen() {
   );
 }
 
+/* ─── TELA: PERFIL ───────────────────────────────────────── */
+function PerfilScreen({ perfil, setPerfil, setTab }) {
+  const [form, setForm] = useState({
+    nome:       perfil?.nome       || '',
+    medicamento: perfil?.medicamento || '',
+    dose:       perfil?.dose       || '',
+    dataInicio: perfil?.dataInicio || '',
+    pesoAtual:  String(perfil?.pesoAtual  || ''),
+    pesoInicio: String(perfil?.pesoInicio || ''),
+    meta:       String(perfil?.meta       || ''),
+  });
+  const [saved, setSaved] = useState(false);
+
+  const upd = (k, v) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); };
+
+  const salvar = () => {
+    const novo = { ...perfil, ...form };
+    setPerfil(novo);
+    localStorage.setItem('renove_perfil', JSON.stringify(novo));
+    setSaved(true);
+  };
+
+  const fieldStyle = {
+    width: '100%', padding: '12px 14px', borderRadius: 12,
+    border: '1.5px solid rgba(45,31,20,0.18)', fontSize: 15,
+    color: 'var(--brown)', background: 'white', boxSizing: 'border-box',
+  };
+  const labelStyle = { fontWeight: 600, color: 'var(--brown)', fontSize: 13, marginBottom: 6, display: 'block' };
+
+  const medicamentos = [
+    'T.G (Tirzepatida Genérica)', 'Lipoless®', 'Tirzec®', 'Lipoland®', 'Gluconex®',
+    'Mounjaro®', 'Zepbound®', 'Semaglutida Genérica', 'Ozempic®', 'Wegovy®',
+    'Saxenda®', 'Outro GLP-1',
+  ];
+
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setTab('home')} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Icon name="arrow-left" size={18} color="var(--cream)" strokeWidth={2} />
+          </button>
+          <div>
+            <h2 style={{ color: 'var(--cream)', fontSize: 20, fontWeight: 700, margin: 0 }}>Meu Perfil</h2>
+            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 12, margin: 0 }}>Suas informações de tratamento</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Dados pessoais */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Dados pessoais</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Nome</label>
+            <input type="text" value={form.nome} onChange={e => upd('nome', e.target.value)}
+              placeholder="Seu nome" style={fieldStyle} />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Data de início do tratamento</label>
+            <input type="date" value={form.dataInicio} onChange={e => upd('dataInicio', e.target.value)} style={fieldStyle} />
+          </div>
+        </div>
+
+        {/* Medicamento */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Medicamento</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Medicamento em uso</label>
+            <select value={form.medicamento} onChange={e => upd('medicamento', e.target.value)}
+              style={{ ...fieldStyle, appearance: 'none' }}>
+              <option value="">Selecione...</option>
+              {medicamentos.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Dose atual</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Personalizada'].map(d => (
+                <button key={d} onClick={() => upd('dose', d)}
+                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                    background: form.dose === d ? 'var(--copper)' : '#F5F0EC',
+                    color: form.dose === d ? 'white' : 'var(--brown-light)', border: 'none' }}>
+                  {d}
+                </button>
+              ))}
+            </div>
+            {form.dose === 'Personalizada' && (
+              <input type="text" placeholder="Ex: 3mg" onChange={e => upd('dose', e.target.value)}
+                style={{ ...fieldStyle, marginTop: 10 }} />
+            )}
+          </div>
+        </div>
+
+        {/* Peso */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Pesos & Meta</div>
+
+          <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Peso inicial (kg)</label>
+              <input type="number" value={form.pesoInicio} onChange={e => upd('pesoInicio', e.target.value)}
+                placeholder="112,4" step="0.1" style={fieldStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Peso atual (kg)</label>
+              <input type="number" value={form.pesoAtual} onChange={e => upd('pesoAtual', e.target.value)}
+                placeholder="98,9" step="0.1" style={fieldStyle} />
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Meta de peso (kg)</label>
+            <input type="number" value={form.meta} onChange={e => upd('meta', e.target.value)}
+              placeholder="85" step="0.5" style={fieldStyle} />
+          </div>
+        </div>
+
+        {/* Botão salvar */}
+        {saved ? (
+          <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 24, marginBottom: 4 }}>✅</div>
+            <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 15 }}>Perfil atualizado!</div>
+          </div>
+        ) : (
+          <button className="btn-primary" onClick={salvar} style={{ fontSize: 16, padding: '16px' }}>
+            Salvar alterações
+          </button>
+        )}
+
+        {/* Zona de risco */}
+        <div style={{ background: '#FDECEA', borderRadius: 14, padding: '14px 16px' }}>
+          <div style={{ fontWeight: 700, color: 'var(--red)', fontSize: 13, marginBottom: 6 }}>Zona de risco</div>
+          <button onClick={() => {
+            if (window.confirm('Isso apagará todos os seus dados. Tem certeza?')) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }} style={{ fontSize: 13, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>
+            🗑️ Apagar todos os dados e recomeçar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── TELA: NOTIFICAÇÕES ─────────────────────────────────── */
 function NotificacoesScreen({ perfil }) {
   const [permissao, setPermissao] = useState(() => {
@@ -1683,20 +1982,20 @@ function App() {
 
   const screens = {
     home: <HomeScreen setTab={setTab} perfil={perfil} />,
-    planejador: <PlanejadorScreen />,
+    planejador: <PlanejadorScreen perfil={perfil} />,
     diario: <DiarioScreen />,
     peso: <PesoScreen perfil={perfil} />,
     rê: <ReScreen />,
     calculadora: <CalculadoraScreen />,
-    fotos: <FotosScreen />,
     notificacoes: <NotificacoesScreen perfil={perfil} />,
+    perfil: <PerfilScreen perfil={perfil} setPerfil={setPerfil} setTab={setTab} />,
   };
 
   return (
     <>
       {/* Tela atual */}
-      <div style={{ position: 'absolute', inset: 0, bottom: 72 }}>
-        {tab === 'rê' ? screens['rê'] : (
+      <div style={{ position: 'absolute', inset: 0, bottom: (tab === 'rê' || tab === 'perfil') ? 0 : 72 }}>
+        {(tab === 'rê' || tab === 'perfil') ? screens[tab] : (
           <div className="screen">
             {screens[tab] || screens['home']}
           </div>
@@ -1704,21 +2003,23 @@ function App() {
       </div>
 
       {/* Bottom Nav */}
-      <div className="bottom-nav">
-        {TABS.map(t => {
-          const active = tab === t.id;
-          return (
-            <button key={t.id} className={`nav-btn${active ? ' active' : ''}`} onClick={() => setTab(t.id)}>
-              <div className="nav-icon-pill">
-                <Icon name={t.icon} size={22}
-                  color={active ? 'var(--copper)' : 'rgba(245,237,227,0.35)'}
-                  strokeWidth={active ? 2.5 : 1.8} />
-              </div>
-              <span className="label">{t.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {tab !== 'perfil' && (
+        <div className="bottom-nav">
+          {TABS.map(t => {
+            const active = tab === t.id;
+            return (
+              <button key={t.id} className={`nav-btn${active ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+                <div className="nav-icon-pill">
+                  <Icon name={t.icon} size={22}
+                    color={active ? 'var(--copper)' : 'rgba(245,237,227,0.35)'}
+                    strokeWidth={active ? 2.5 : 1.8} />
+                </div>
+                <span className="label">{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
