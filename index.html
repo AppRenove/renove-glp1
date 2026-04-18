@@ -137,13 +137,27 @@ function WeightChart({ dados, meta }) {
 }
 
 /* ─── TELA: HOME ─────────────────────────────────────────── */
-function HomeScreen({ setTab }) {
-  const pesoAtual = 98.9;
-  const pesoInicio = 112.4;
-  const perdido = (pesoInicio - pesoAtual).toFixed(1);
-  const diasJornada = 74;
-  const proxDia = 'Quinta-feira';
-  const diasRestantes = 3;
+function HomeScreen({ setTab, perfil }) {
+  const pesoAtual  = parseFloat(perfil?.pesoAtual)  || 98.9;
+  const pesoInicio = parseFloat(perfil?.pesoInicio) || 112.4;
+  const meta       = parseFloat(perfil?.meta)       || 85;
+  const perdido    = Math.max(0, pesoInicio - pesoAtual).toFixed(1);
+  const progresso  = Math.min(100, Math.max(0, ((pesoInicio - pesoAtual) / (pesoInicio - meta)) * 100)).toFixed(0);
+
+  // Calcular dias de jornada
+  const dataInicioDate = perfil?.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : new Date('2025-02-01');
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000 * 60 * 60 * 24)));
+
+  // Calcular próxima aplicação (a cada 7 dias a partir da data de início)
+  const semanaAtual = Math.floor(diasJornada / 7);
+  const proximaApl = new Date(dataInicioDate);
+  proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
+  const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000 * 60 * 60 * 24)));
+  const diasSemanaPT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const proxDia = diasSemanaPT[proximaApl.getDay()];
+  const proxDataStr = `${proximaApl.getDate().toString().padStart(2,'0')}/${(proximaApl.getMonth()+1).toString().padStart(2,'0')}`;
 
   return (
     <div className="screen">
@@ -152,7 +166,7 @@ function HomeScreen({ setTab }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>Bom dia 🌿</p>
-            <h1 style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 700, margin: 0 }}>Guilherme</h1>
+            <h1 style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 700, margin: 0 }}>{perfil?.nome || 'Guilherme'}</h1>
           </div>
           <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
         </div>
@@ -162,7 +176,7 @@ function HomeScreen({ setTab }) {
           {[
             { label: 'Dias de jornada', valor: diasJornada, icon: '📅' },
             { label: 'Kg perdidos', valor: `${perdido}kg`, icon: '⬇️' },
-            { label: 'Dose atual', valor: '5mg', icon: '💉' },
+            { label: 'Dose atual', valor: perfil?.dose || '5mg', icon: '💉' },
           ].map(s => (
             <div key={s.label} style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <div style={{ fontSize: 16, marginBottom: 2 }}>{s.icon}</div>
@@ -181,12 +195,12 @@ function HomeScreen({ setTab }) {
               <span style={{ fontSize: 20 }}>💉</span>
               <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Próxima picadinha</span>
             </div>
-            <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)', fontSize: 11 }}>5mg</span>
+            <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)', fontSize: 11 }}>{perfil?.dose || '5mg'}</span>
           </div>
           <div className="flex items-end justify-between">
             <div>
               <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--copper)' }}>{diasRestantes} dias</div>
-              <div style={{ color: '#8A7060', fontSize: 13 }}>{proxDia}, 20/04</div>
+              <div style={{ color: '#8A7060', fontSize: 13 }}>{proxDia}, {proxDataStr}</div>
             </div>
             <button className="btn-outline" style={{ width: 'auto', padding: '10px 18px', fontSize: 13 }} onClick={() => setTab('planejador')}>
               Ver planejador
@@ -230,16 +244,16 @@ function HomeScreen({ setTab }) {
             <button onClick={() => setTab('peso')} style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Ver tudo →</button>
           </div>
           <div className="flex items-baseline gap-2 mb-3">
-            <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brown)' }}>98,9</span>
+            <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brown)' }}>{pesoAtual.toFixed(1).replace('.',',')}</span>
             <span style={{ fontSize: 15, color: '#8A7060' }}>kg</span>
             <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, marginLeft: 4 }}>↓ {perdido}kg</span>
           </div>
           <div style={{ height: 4, background: '#EEE8E0', borderRadius: 2, marginBottom: 4 }}>
-            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 2, width: '62%' }} />
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 2, width: `${progresso}%` }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9A8070' }}>
-            <span>Início: 112,4kg</span>
-            <span>Meta: 85kg ← 62% concluída</span>
+            <span>Início: {pesoInicio.toFixed(1).replace('.',',')}kg</span>
+            <span>Meta: {meta}kg ← {progresso}% concluída</span>
           </div>
         </div>
 
@@ -882,6 +896,147 @@ function FotosScreen() {
   );
 }
 
+/* ─── TELA: ONBOARDING ───────────────────────────────────── */
+function OnboardingScreen({ onComplete }) {
+  const [step, setStep] = useState(0);
+  const [dados, setDados] = useState({
+    nome: '',
+    pesoInicio: '',
+    pesoAtual: '',
+    meta: '',
+    dose: '5mg',
+    dataInicio: new Date().toISOString().split('T')[0],
+  });
+
+  const set = (k, v) => setDados(prev => ({ ...prev, [k]: v }));
+
+  const salvar = () => {
+    const perfil = { ...dados, criadoEm: new Date().toISOString() };
+    localStorage.setItem('renove_perfil', JSON.stringify(perfil));
+    onComplete(perfil);
+  };
+
+  const doses = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg'];
+
+  const inputStyle = {
+    width: '100%', padding: '14px 16px', borderRadius: 12, fontSize: 16,
+    border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)',
+    fontFamily: 'inherit', boxSizing: 'border-box',
+  };
+  const labelStyle = { fontWeight: 600, color: 'var(--brown)', fontSize: 14, display: 'block', marginBottom: 8 };
+
+  const steps = [
+    // ── Passo 0: Boas-vindas ──
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="header-grad" style={{ padding: '70px 28px 44px', textAlign: 'center', flexShrink: 0 }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🌿</div>
+        <h1 style={{ color: 'var(--cream)', fontSize: 26, fontWeight: 800, margin: '0 0 10px' }}>Bem-vindo ao Renove</h1>
+        <p style={{ color: 'rgba(245,237,227,0.65)', fontSize: 15, margin: 0, lineHeight: 1.6 }}>
+          Sua jornada GLP-1 começa aqui.<br />Vamos configurar tudo em 2 minutinhos.
+        </p>
+      </div>
+      <div style={{ flex: 1, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div>
+          <label style={labelStyle}>Como posso te chamar? 👋</label>
+          <input
+            value={dados.nome}
+            onChange={e => set('nome', e.target.value)}
+            placeholder="Seu primeiro nome"
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ marginTop: 'auto' }}>
+          <button className="btn-primary" disabled={!dados.nome.trim()}
+            onClick={() => setStep(1)}
+            style={{ opacity: dados.nome.trim() ? 1 : 0.45 }}>
+            Próximo →
+          </button>
+        </div>
+      </div>
+    </div>,
+
+    // ── Passo 1: Pesos ──
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="header-grad" style={{ padding: '60px 24px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {[0,1,2].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i <= 1 ? 'var(--copper)' : 'rgba(255,255,255,0.2)' }} />)}
+        </div>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Seu peso ⚖️</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Dados ficam somente no seu aparelho</p>
+      </div>
+      <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+        {[
+          { key: 'pesoInicio', label: 'Peso no início do tratamento (kg)', placeholder: 'ex: 112.4' },
+          { key: 'pesoAtual',  label: 'Peso atual (kg)',                    placeholder: 'ex: 98.9'  },
+          { key: 'meta',       label: 'Meta de peso (kg)',                  placeholder: 'ex: 85'    },
+        ].map(({ key, label, placeholder }) => (
+          <div key={key}>
+            <label style={labelStyle}>{label}</label>
+            <input type="number" inputMode="decimal" value={dados[key]}
+              onChange={e => set(key, e.target.value)}
+              placeholder={placeholder} style={inputStyle} />
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 10, marginTop: 'auto', paddingTop: 8 }}>
+          <button onClick={() => setStep(0)} style={{ flex: 1, padding: 14, borderRadius: 12, border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>← Voltar</button>
+          <button className="btn-primary" style={{ flex: 2, opacity: dados.pesoInicio && dados.pesoAtual && dados.meta ? 1 : 0.45 }}
+            disabled={!dados.pesoInicio || !dados.pesoAtual || !dados.meta}
+            onClick={() => setStep(2)}>Próximo →</button>
+        </div>
+      </div>
+    </div>,
+
+    // ── Passo 2: Tratamento ──
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="header-grad" style={{ padding: '60px 24px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {[0,1,2].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: 'var(--copper)' }} />)}
+        </div>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Seu tratamento 💉</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Para calcular sua próxima picadinha</p>
+      </div>
+      <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
+        <div>
+          <label style={labelStyle}>Dose atual</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {doses.map(d => (
+              <button key={d} onClick={() => set('dose', d)} style={{
+                padding: '10px 16px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                background: dados.dose === d ? 'var(--copper)' : '#F5F0EC',
+                color: dados.dose === d ? 'white' : 'var(--brown-light)',
+                border: dados.dose === d ? '2px solid var(--copper)' : '2px solid #E8DDD4',
+                transition: 'all .15s',
+              }}>{d}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Data da primeira aplicação</label>
+          <input type="date" value={dados.dataInicio}
+            onChange={e => set('dataInicio', e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            style={inputStyle} />
+          <p style={{ color: '#9A8070', fontSize: 12, margin: '8px 0 0', lineHeight: 1.5 }}>
+            💡 Usamos essa data para calcular a janela semanal de aplicações
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 'auto', paddingTop: 8 }}>
+          <button onClick={() => setStep(1)} style={{ flex: 1, padding: 14, borderRadius: 12, border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>← Voltar</button>
+          <button className="btn-primary" style={{ flex: 2 }} onClick={salvar}>
+            Começar jornada 🚀
+          </button>
+        </div>
+      </div>
+    </div>,
+  ];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: 'var(--cream-light)', overflow: 'hidden' }}>
+      {steps[step]}
+    </div>
+  );
+}
+
 /* ─── NAVEGAÇÃO ──────────────────────────────────────────── */
 const TABS = [
   { id: 'home', label: 'Home', emoji: '🏠' },
@@ -894,9 +1049,20 @@ const TABS = [
 /* ─── APP ROOT ───────────────────────────────────────────── */
 function App() {
   const [tab, setTab] = useState('home');
+  const [perfil, setPerfil] = useState(() => {
+    try {
+      const saved = localStorage.getItem('renove_perfil');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  // Primeiro acesso → mostrar onboarding
+  if (!perfil) {
+    return <OnboardingScreen onComplete={p => setPerfil(p)} />;
+  }
 
   const screens = {
-    home: <HomeScreen setTab={setTab} />,
+    home: <HomeScreen setTab={setTab} perfil={perfil} />,
     planejador: <PlanejadorScreen />,
     diario: <DiarioScreen />,
     peso: <PesoScreen />,
