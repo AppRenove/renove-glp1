@@ -1,0 +1,6 @@
+# Arquivo de configuração local com chave da API (não vai pro GitHub)
+config.js
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db

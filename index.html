@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Renove GLP-1</title>
+  <script src="config.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --brown:        #2D1F14;
+      --brown-mid:    #3D2B1A;
+      --brown-light:  #5A3E28;
+      --copper:       #C4885A;
+      --copper-light: #DCAA78;
+      --copper-pale:  #F0D5B8;
+      --cream:        #F5EDE3;
+      --cream-light:  #FBF7F3;
+      --red:          #D94F4F;
+      --yellow:       #D4A017;
+      --green:        #4CAF7A;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: #1a1008; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    #root { width: 100%; max-width: 430px; height: 100dvh; overflow: hidden; position: relative; background: var(--cream-light); }
+    .screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 80px; }
+    .screen::-webkit-scrollbar { display: none; }
+    .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: var(--brown); z-index: 50; display: flex; border-top: 1px solid rgba(196,136,90,0.2); }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; padding: 8px 0; }
+    .nav-btn .label { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
+    .nav-btn.active .label { color: var(--copper); }
+    .nav-btn:not(.active) .label { color: rgba(245,237,227,0.4); }
+    .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 12px rgba(45,31,20,0.08); }
+    .btn-primary { background: var(--copper); color: white; border: none; border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; letter-spacing: 0.2px; transition: opacity .15s; }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-outline { background: transparent; color: var(--copper); border: 1.5px solid var(--copper); border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .header-grad { background: linear-gradient(160deg, var(--brown) 0%, var(--brown-mid) 100%); }
+    input, select { outline: none; }
+    input:focus, select:focus { border-color: var(--copper) !important; }
+    .chat-bubble-rê { background: white; border-radius: 18px 18px 18px 4px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+    .chat-bubble-user { background: var(--copper); color: white; border-radius: 18px 18px 4px 18px; }
+    .pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .semaforo-verde  { background: #E8F8EE; color: #2E7D52; }
+    .semaforo-amarelo { background: #FFF8E0; color: #8A6400; }
+    .semaforo-vermelho { background: #FDECEA; color: #B71C1C; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+    .pulse { animation: pulse 2s infinite; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+/* ─── DADOS MOCK ──────────────────────────────────────────── */
+const MOCK_PESOS = [
+  { data: '01/02', peso: 112.4 },
+  { data: '08/02', peso: 110.8 },
+  { data: '15/02', peso: 109.2 },
+  { data: '22/02', peso: 107.9 },
+  { data: '01/03', peso: 106.5 },
+  { data: '08/03', peso: 105.1 },
+  { data: '15/03', peso: 103.8 },
+  { data: '22/03', peso: 102.4 },
+  { data: '29/03', peso: 101.2 },
+  { data: '05/04', peso: 100.1 },
+  { data: '12/04', peso: 98.9 },
+];
+
+const LOCAIS = ['Abdômen esquerdo', 'Abdômen direito', 'Coxa esquerda', 'Coxa direita', 'Braço esquerdo', 'Braço direito'];
+
+const MSGS_INICIAIS = [
+  { de: 'rê', texto: 'Oi! Eu sou a Rê, sua assistente no Renove GLP-1 🌿\n\nEstou aqui para te ajudar com dúvidas sobre Tirzepatida, aplicações, sintomas e sua jornada. Como posso te ajudar hoje?' },
+];
+
+// Chave configurada via painel de configurações do app
+const OPENAI_KEY = window.__RENOVE_API_KEY__ || '';
+
+const SISTEMA_RE = `Você é a Rê, assistente virtual acolhedora e especialista do app Renove GLP-1.
+Você ajuda pessoas em tratamento com medicamentos GLP-1 (Tirzepatida, Semaglutida e similares).
+Responda sempre em português brasileiro, de forma calorosa, direta e sem julgamentos.
+Fale como uma amiga que entende do assunto — nunca como um robô ou médico formal.
+Use emojis com moderação para deixar a conversa mais humana.
+Seja concisa: respostas curtas e práticas são melhores que textos longos.
+IMPORTANTE: Nunca substitua orientação médica. Para sintomas graves, sempre oriente consultar o médico.
+Seus principais temas: aplicação de Tirzepatida/Semaglutida, janela de doses, locais de aplicação, efeitos colaterais comuns, dicas de alimentação e hidratação durante o tratamento GLP-1.`;
+
+/* ─── SVG CHART ──────────────────────────────────────────── */
+function WeightChart({ dados, meta }) {
+  const W = 340, H = 160, PAD = { top: 20, right: 20, bottom: 30, left: 40 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const minP = Math.min(...dados.map(d => d.peso)) - 1;
+  const maxP = Math.max(...dados.map(d => d.peso)) + 1;
+  const scaleX = i => PAD.left + (i / (dados.length - 1)) * chartW;
+  const scaleY = v => PAD.top + (1 - (v - minP) / (maxP - minP)) * chartH;
+  const pts = dados.map((d, i) => `${scaleX(i)},${scaleY(d.peso)}`).join(' ');
+  const area = `M ${scaleX(0)},${scaleY(dados[0].peso)} ` +
+    dados.slice(1).map((d, i) => `L ${scaleX(i+1)},${scaleY(d.peso)}`).join(' ') +
+    ` L ${scaleX(dados.length-1)},${PAD.top + chartH} L ${PAD.left},${PAD.top + chartH} Z`;
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#C4885A" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#C4885A" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {/* Grid lines */}
+      {[0,0.25,0.5,0.75,1].map(t => (
+        <line key={t} x1={PAD.left} y1={PAD.top + t * chartH} x2={W - PAD.right} y2={PAD.top + t * chartH}
+          stroke="#E8E0D8" strokeWidth="1" />
+      ))}
+      {/* Area */}
+      <path d={area} fill="url(#chartGrad)" />
+      {/* Line */}
+      <polyline points={pts} fill="none" stroke="#C4885A" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      {/* Dots */}
+      {dados.map((d, i) => (
+        <circle key={i} cx={scaleX(i)} cy={scaleY(d.peso)} r={i === dados.length - 1 ? 5 : 3}
+          fill={i === dados.length - 1 ? '#C4885A' : 'white'} stroke="#C4885A" strokeWidth="2" />
+      ))}
+      {/* Labels X — mostrar só início, meio e fim */}
+      {[0, Math.floor(dados.length/2), dados.length-1].map(i => (
+        <text key={i} x={scaleX(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#9A8070">{dados[i].data}</text>
+      ))}
+      {/* Labels Y */}
+      {[minP+1, (minP+maxP)/2, maxP-1].map((v, i) => (
+        <text key={i} x={PAD.left - 6} y={scaleY(v) + 4} textAnchor="end" fontSize="9" fill="#9A8070">{Math.round(v)}</text>
+      ))}
+    </svg>
+  );
+}
+
+/* ─── TELA: HOME ─────────────────────────────────────────── */
+function HomeScreen({ setTab }) {
+  const pesoAtual = 98.9;
+  const pesoInicio = 112.4;
+  const perdido = (pesoInicio - pesoAtual).toFixed(1);
+  const diasJornada = 74;
+  const proxDia = 'Quinta-feira';
+  const diasRestantes = 3;
+
+  return (
+    <div className="screen">
+      {/* Header */}
+      <div className="header-grad px-5 pt-12 pb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>Bom dia 🌿</p>
+            <h1 style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 700, margin: 0 }}>Guilherme</h1>
+          </div>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
+        </div>
+
+        {/* Stats rápidas */}
+        <div className="flex gap-3">
+          {[
+            { label: 'Dias de jornada', valor: diasJornada, icon: '📅' },
+            { label: 'Kg perdidos', valor: `${perdido}kg`, icon: '⬇️' },
+            { label: 'Dose atual', valor: '5mg', icon: '💉' },
+          ].map(s => (
+            <div key={s.label} style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, marginBottom: 2 }}>{s.icon}</div>
+              <div style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 15 }}>{s.valor}</div>
+              <div style={{ color: 'rgba(245,237,227,0.5)', fontSize: 10, lineHeight: 1.2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Próxima aplicação */}
+        <div className="card" style={{ borderLeft: '4px solid var(--copper)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 20 }}>💉</span>
+              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Próxima picadinha</span>
+            </div>
+            <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)', fontSize: 11 }}>5mg</span>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--copper)' }}>{diasRestantes} dias</div>
+              <div style={{ color: '#8A7060', fontSize: 13 }}>{proxDia}, 20/04</div>
+            </div>
+            <button className="btn-outline" style={{ width: 'auto', padding: '10px 18px', fontSize: 13 }} onClick={() => setTab('planejador')}>
+              Ver planejador
+            </button>
+          </div>
+          {/* Barra de progresso da semana */}
+          <div className="mt-3">
+            <div style={{ display: 'flex', gap: 4 }}>
+              {['S','T','Q','Q','S','S','D'].map((d, i) => (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 9, color: '#9A8070', marginBottom: 3 }}>{d}</div>
+                  <div style={{ height: 6, borderRadius: 3, background: i < 4 ? 'var(--copper)' : (i === 4 ? 'var(--copper-pale)' : '#EEE8E0') }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Como você está hoje? */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Como você está hoje? 🌡️</div>
+          <div className="flex gap-2">
+            {[
+              { emoji: '😊', label: 'Bem', cor: 'var(--green)', bg: '#E8F8EE' },
+              { emoji: '😐', label: 'Regular', cor: 'var(--yellow)', bg: '#FFF8E0' },
+              { emoji: '😣', label: 'Mal', cor: 'var(--red)', bg: '#FDECEA' },
+            ].map(op => (
+              <button key={op.label} onClick={() => setTab('diario')}
+                style={{ flex: 1, background: op.bg, border: `1.5px solid ${op.cor}30`, borderRadius: 12, padding: '12px 8px', cursor: 'pointer', textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 3 }}>{op.emoji}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: op.cor }}>{op.label}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Peso */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Evolução de peso ⚖️</div>
+            <button onClick={() => setTab('peso')} style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Ver tudo →</button>
+          </div>
+          <div className="flex items-baseline gap-2 mb-3">
+            <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brown)' }}>98,9</span>
+            <span style={{ fontSize: 15, color: '#8A7060' }}>kg</span>
+            <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, marginLeft: 4 }}>↓ {perdido}kg</span>
+          </div>
+          <div style={{ height: 4, background: '#EEE8E0', borderRadius: 2, marginBottom: 4 }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 2, width: '62%' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9A8070' }}>
+            <span>Início: 112,4kg</span>
+            <span>Meta: 85kg ← 62% concluída</span>
+          </div>
+        </div>
+
+        {/* Atalhos rápidos */}
+        <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Acesso rápido</div>
+        <div className="flex gap-3">
+          {[
+            { icon: '🧮', label: 'Calculadora\nCorporal', tab: 'calculadora' },
+            { icon: '💬', label: 'Perguntar\npara a Rê', tab: 'rê' },
+            { icon: '📷', label: 'Espaço\nde Fotos', tab: 'fotos' },
+          ].map(a => (
+            <button key={a.tab} onClick={() => setTab(a.tab)}
+              style={{ flex: 1, background: 'white', borderRadius: 14, padding: '14px 8px', boxShadow: '0 2px 10px rgba(45,31,20,0.07)', cursor: 'pointer', border: 'none', textAlign: 'center' }}>
+              <div style={{ fontSize: 26, marginBottom: 6 }}>{a.icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--brown-light)', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{a.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: PLANEJADOR ───────────────────────────────────── */
+function PlanejadorScreen() {
+  const [aplicado, setAplicado] = useState(false);
+  const [local, setLocal] = useState(0);
+  const historico = [
+    { data: '10/04', local: 'Abdômen esquerdo', dose: '5mg' },
+    { data: '03/04', local: 'Coxa direita', dose: '5mg' },
+    { data: '27/03', local: 'Abdômen direito', dose: '5mg' },
+    { data: '20/03', local: 'Coxa esquerda', dose: '2,5mg' },
+  ];
+
+  const dias = [
+    { letra: 'S', num: 14, passado: true, aplicacao: false },
+    { letra: 'T', num: 15, passado: true, aplicacao: false },
+    { letra: 'Q', num: 16, passado: true, aplicacao: false },
+    { letra: 'Q', num: 17, passado: false, hoje: true, aplicacao: false },
+    { letra: 'S', num: 18, passado: false, aplicacao: false },
+    { letra: 'S', num: 19, passado: false, aplicacao: false },
+    { letra: 'D', num: 20, passado: false, aplicacao: true },
+  ];
+
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Planejador 💉</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Sua picadinha semanal</p>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Countdown */}
+        <div className="card" style={{ background: 'linear-gradient(135deg, var(--brown) 0%, var(--brown-mid) 100%)', color: 'white' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Próxima aplicação</p>
+              <p style={{ color: 'var(--cream)', fontSize: 28, fontWeight: 800, margin: '4px 0' }}>Domingo, 20/04</p>
+              <span className="pill" style={{ background: 'rgba(196,136,90,0.25)', color: 'var(--copper-light)', marginTop: 4, display: 'inline-flex' }}>⏰ 3 dias restantes</span>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--copper-light)', lineHeight: 1 }}>3</div>
+              <div style={{ fontSize: 11, color: 'rgba(245,237,227,0.5)' }}>dias</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(196,136,90,0.15)', borderRadius: 10, fontSize: 13, color: 'rgba(245,237,227,0.8)' }}>
+            🕐 Janela válida até 24/04 (4 dias de tolerância)
+          </div>
+        </div>
+
+        {/* Mini calendário */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Semana atual — Abril 2025</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {dias.map((d, i) => (
+              <div key={i} style={{
+                flex: 1, textAlign: 'center', borderRadius: 10, padding: '8px 4px',
+                background: d.aplicacao ? 'var(--copper)' : d.hoje ? 'var(--copper-pale)' : d.passado ? '#F5F0EC' : 'white',
+                border: d.hoje ? '2px solid var(--copper)' : '2px solid transparent',
+              }}>
+                <div style={{ fontSize: 10, color: d.aplicacao ? 'rgba(255,255,255,0.7)' : '#9A8070', marginBottom: 3 }}>{d.letra}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: d.aplicacao ? 'white' : d.hoje ? 'var(--copper)' : 'var(--brown)' }}>{d.num}</div>
+                {d.aplicacao && <div style={{ fontSize: 16, marginTop: 2 }}>💉</div>}
+                {d.hoje && <div style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--copper)', margin: '3px auto 0' }} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rodízio de local */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>Local sugerido para próxima aplicação</div>
+          <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 12px' }}>Baseado no rodízio automático</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {LOCAIS.map((l, i) => (
+              <button key={l} onClick={() => setLocal(i)}
+                style={{
+                  padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: local === i ? 'var(--copper)' : '#F5F0EC',
+                  color: local === i ? 'white' : 'var(--brown-light)',
+                  border: 'none', transition: 'all .15s'
+                }}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Botão registrar */}
+        {!aplicado ? (
+          <button className="btn-primary" onClick={() => setAplicado(true)} style={{ fontSize: 16, padding: '16px' }}>
+            ✅ Registrar aplicação de hoje
+          </button>
+        ) : (
+          <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 6 }}>🎉</div>
+            <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 16 }}>Aplicação registrada!</div>
+            <div style={{ color: '#4CAF7A', fontSize: 13, marginTop: 4 }}>Local: {LOCAIS[local]} · Dose: 5mg</div>
+          </div>
+        )}
+
+        {/* Histórico */}
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico de aplicações</div>
+          <div className="flex flex-col gap-2">
+            {historico.map((h, i) => (
+              <div key={i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                <div className="flex items-center gap-3">
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>💉</div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>{h.local}</div>
+                    <div style={{ fontSize: 12, color: '#9A8070' }}>{h.data}</div>
+                  </div>
+                </div>
+                <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)' }}>{h.dose}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: DIÁRIO ───────────────────────────────────────── */
+function DiarioScreen() {
+  const [sintomas, setSintomas] = useState({
+    nausea: 0, vomito: 0, constipacao: 0, dor: 0, tontura: 0, local: 0,
+  });
+  const [hydra, setHydra] = useState(1.5);
+  const [saved, setSaved] = useState(false);
+
+  const niveis = ['Nenhum', 'Leve', 'Moderado', 'Intenso'];
+  const listaSintomas = [
+    { key: 'nausea', label: 'Náusea', emoji: '🤢' },
+    { key: 'vomito', label: 'Vômito', emoji: '🤮' },
+    { key: 'constipacao', label: 'Constipação', emoji: '😣' },
+    { key: 'dor', label: 'Dor abdominal', emoji: '😖' },
+    { key: 'tontura', label: 'Tontura', emoji: '😵' },
+    { key: 'local', label: 'Reação no local', emoji: '💢' },
+  ];
+
+  const maxSintoma = Math.max(...Object.values(sintomas));
+  const semaforo = maxSintoma === 0 ? 'verde' : maxSintoma <= 1 ? 'verde' : maxSintoma === 2 ? 'amarelo' : 'vermelho';
+  const msgSemaforo = {
+    verde: { cor: 'var(--green)', bg: '#E8F8EE', txt: 'Tudo certo! Continue hidratando bem e priorizando proteína 💚', emoji: '🟢' },
+    amarelo: { cor: 'var(--yellow)', bg: '#FFF8E0', txt: 'Cuide-se! Coma devagar, em pequenas porções, e descanse quando precisar 💛', emoji: '🟡' },
+    vermelho: { cor: 'var(--red)', bg: '#FDECEA', txt: 'Sintomas intensos — fale com seu médico hoje ❤️', emoji: '🔴' },
+  };
+  const s = msgSemaforo[semaforo];
+
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Diário de Sintomas 📔</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Hoje, 17 de abril</p>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Semáforo */}
+        <div style={{ background: s.bg, borderRadius: 14, padding: '14px 16px', border: `1.5px solid ${s.cor}30` }}>
+          <div className="flex items-center gap-3">
+            <span style={{ fontSize: 28 }}>{s.emoji}</span>
+            <div>
+              <div style={{ fontWeight: 700, color: s.cor, fontSize: 14 }}>Status de hoje</div>
+              <div style={{ fontSize: 13, color: s.cor, opacity: 0.85 }}>{s.txt}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sintomas */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Como você está?</div>
+          <div className="flex flex-col gap-4">
+            {listaSintomas.map(({ key, label, emoji }) => (
+              <div key={key}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span style={{ fontSize: 18 }}>{emoji}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brown)' }}>{label}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {niveis.map((n, i) => (
+                    <button key={n} onClick={() => setSintomas(prev => ({ ...prev, [key]: i }))}
+                      style={{
+                        flex: 1, padding: '8px 2px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none',
+                        background: sintomas[key] === i
+                          ? (i === 0 ? '#E8F8EE' : i === 1 ? '#FFF8E0' : i === 2 ? '#FFF0D0' : '#FDECEA')
+                          : '#F5F0EC',
+                        color: sintomas[key] === i
+                          ? (i === 0 ? 'var(--green)' : i === 1 ? 'var(--yellow)' : i === 2 ? '#C47A00' : 'var(--red)')
+                          : '#9A8070',
+                        outline: sintomas[key] === i ? '2px solid currentColor' : 'none',
+                        outlineOffset: '-2px',
+                      }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Hidratação */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>💧 Hidratação hoje</div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setHydra(h => Math.max(0, +(h - 0.25).toFixed(2)))}
+              style={{ width: 40, height: 40, borderRadius: '50%', background: '#F5F0EC', border: 'none', fontSize: 20, cursor: 'pointer', fontWeight: 700, color: 'var(--brown-light)' }}>−</button>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: hydra >= 2 ? 'var(--green)' : 'var(--copper)' }}>{hydra.toFixed(1)}L</div>
+              <div style={{ fontSize: 12, color: '#9A8070' }}>Meta: 2,5L</div>
+              <div style={{ height: 6, background: '#EEE8E0', borderRadius: 3, marginTop: 8 }}>
+                <div style={{ height: '100%', background: hydra >= 2 ? 'var(--green)' : 'var(--copper)', borderRadius: 3, width: `${Math.min(100, (hydra/2.5)*100)}%`, transition: 'width .3s' }} />
+              </div>
+            </div>
+            <button onClick={() => setHydra(h => +(h + 0.25).toFixed(2))}
+              style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--copper)', border: 'none', fontSize: 20, cursor: 'pointer', fontWeight: 700, color: 'white' }}>+</button>
+          </div>
+        </div>
+
+        {!saved ? (
+          <button className="btn-primary" onClick={() => setSaved(true)} style={{ fontSize: 16, padding: 16 }}>
+            Salvar registro de hoje
+          </button>
+        ) : (
+          <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 28, marginBottom: 4 }}>✅</div>
+            <div style={{ fontWeight: 700, color: '#2E7D52' }}>Registro salvo! Sequência: 🔥 5 dias</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: PESO ─────────────────────────────────────────── */
+function PesoScreen() {
+  const [pesos, setPesos] = useState(MOCK_PESOS);
+  const [novoPeso, setNovoPeso] = useState('');
+  const [periodo, setPeriodo] = useState('all');
+
+  const dadosFiltrados = periodo === '30' ? pesos.slice(-5) : periodo === '14' ? pesos.slice(-3) : pesos;
+  const pesoAtual = pesos[pesos.length - 1].peso;
+  const pesoInicio = pesos[0].peso;
+  const perdido = (pesoInicio - pesoAtual).toFixed(1);
+  const meta = 85;
+  const progresso = ((pesoInicio - pesoAtual) / (pesoInicio - meta) * 100).toFixed(0);
+
+  const adicionar = () => {
+    const p = parseFloat(novoPeso.replace(',', '.'));
+    if (!p || p < 30 || p > 300) return;
+    const hoje = new Date();
+    const data = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
+    setPesos(prev => [...prev, { data, peso: p }]);
+    setNovoPeso('');
+  };
+
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Evolução de Peso ⚖️</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Desde o início do tratamento</p>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Cards de stats */}
+        <div className="flex gap-3">
+          {[
+            { label: 'Peso atual', valor: `${pesoAtual}kg`, cor: 'var(--brown)' },
+            { label: 'Perdidos', valor: `↓ ${perdido}kg`, cor: 'var(--green)' },
+            { label: 'Meta', valor: `${meta}kg`, cor: 'var(--copper)' },
+          ].map(s => (
+            <div key={s.label} className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px' }}>
+              <div style={{ fontWeight: 800, fontSize: 17, color: s.cor }}>{s.valor}</div>
+              <div style={{ fontSize: 11, color: '#9A8070', marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Progresso meta */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-2">
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>Progresso até a meta</span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--copper)' }}>{progresso}%</span>
+          </div>
+          <div style={{ height: 10, background: '#EEE8E0', borderRadius: 5 }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 5, width: `${progresso}%`, transition: 'width .5s' }} />
+          </div>
+          <div className="flex justify-between mt-2" style={{ fontSize: 11, color: '#9A8070' }}>
+            <span>Início: {pesoInicio}kg</span>
+            <span>Meta: {meta}kg</span>
+          </div>
+        </div>
+
+        {/* Gráfico */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-3">
+            <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Gráfico</span>
+            <div className="flex gap-1">
+              {[['14','14d'],['30','30d'],['all','Tudo']].map(([v,l]) => (
+                <button key={v} onClick={() => setPeriodo(v)}
+                  style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
+                    background: periodo === v ? 'var(--copper)' : '#F5F0EC',
+                    color: periodo === v ? 'white' : '#8A7060' }}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <WeightChart dados={dadosFiltrados} meta={meta} />
+        </div>
+
+        {/* Adicionar peso */}
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Registrar novo peso</div>
+          <div className="flex gap-2">
+            <input
+              type="number" placeholder="Ex: 97,5" value={novoPeso}
+              onChange={e => setNovoPeso(e.target.value)}
+              style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)' }}
+            />
+            <button onClick={adicionar} className="btn-primary" style={{ width: 'auto', padding: '12px 20px', fontSize: 15 }}>
+              + Adicionar
+            </button>
+          </div>
+        </div>
+
+        {/* Histórico */}
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico</div>
+          {[...pesos].reverse().slice(0, 6).map((p, i) => (
+            <div key={i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+              <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{p.data}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {i < pesos.length - 1 && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>↓ {(pesos[pesos.length - 1 - i].peso - pesos[pesos.length - 2 - i]?.peso).toFixed(1)}kg</span>}
+                <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--brown)' }}>{p.peso}kg</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: CALCULADORA ──────────────────────────────────── */
+function CalculadoraScreen() {
+  const [form, setForm] = useState({ sexo: 'F', idade: 34, altura: 165, peso: 98.9, cintura: 96, quadril: 112, pescoco: 36 });
+  const [result, setResult] = useState(null);
+
+  const calcular = () => {
+    const { sexo, altura, cintura, quadril, pescoco, peso, idade } = form;
+    let gordura;
+    if (sexo === 'F') {
+      gordura = 495 / (1.29579 - 0.35004 * Math.log10(cintura + quadril - pescoco) + 0.22100 * Math.log10(altura)) - 450;
+    } else {
+      gordura = 495 / (1.0324 - 0.19077 * Math.log10(cintura - pescoco) + 0.15456 * Math.log10(altura)) - 450;
+    }
+    gordura = Math.max(5, Math.min(60, gordura));
+    const massaGorda = (gordura / 100) * peso;
+    const massaMagra = peso - massaGorda;
+    const imc = peso / ((altura / 100) ** 2);
+    const rcq = cintura / quadril;
+    setResult({ gordura: gordura.toFixed(1), massaGorda: massaGorda.toFixed(1), massaMagra: massaMagra.toFixed(1), imc: imc.toFixed(1), rcq: rcq.toFixed(2) });
+  };
+
+  const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({ ...p, [key]: parseFloat(e.target.value) || e.target.value }) )});
+  const inputStyle = { width: '100%', padding: '11px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 14, color: 'var(--brown)' };
+
+  const imcLabel = result ? (result.imc < 18.5 ? 'Abaixo do peso' : result.imc < 25 ? 'Normal' : result.imc < 30 ? 'Sobrepeso' : 'Obesidade') : '';
+  const imcCor = result ? (result.imc < 25 ? 'var(--green)' : result.imc < 30 ? 'var(--yellow)' : 'var(--red)') : '';
+
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Calculadora Corporal 🧮</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Método da Marinha dos EUA</p>
+      </div>
+
+      <div className="px-4 py-4 flex flex-col gap-4">
+        <div className="card">
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Seus dados</div>
+          {/* Sexo */}
+          <div className="mb-4">
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#8A7060', display: 'block', marginBottom: 6 }}>Sexo</label>
+            <div className="flex gap-2">
+              {['F','M'].map(s => (
+                <button key={s} onClick={() => setForm(p => ({ ...p, sexo: s }))}
+                  style={{ flex: 1, padding: 10, borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    background: form.sexo === s ? 'var(--copper)' : '#F5F0EC',
+                    color: form.sexo === s ? 'white' : 'var(--brown-light)' }}>
+                  {s === 'F' ? '👩 Feminino' : '👨 Masculino'}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Campos */}
+          {[
+            { key: 'idade', label: 'Idade (anos)', placeholder: '34' },
+            { key: 'altura', label: 'Altura (cm)', placeholder: '165' },
+            { key: 'peso', label: 'Peso atual (kg)', placeholder: '98,9' },
+            { key: 'cintura', label: 'Cintura (cm) — altura do umbigo', placeholder: '96' },
+            { key: 'quadril', label: 'Quadril (cm) — parte mais larga', placeholder: '112' },
+            { key: 'pescoco', label: 'Pescoço (cm) — abaixo da laringe', placeholder: '36' },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="mb-3">
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#8A7060', display: 'block', marginBottom: 6 }}>{label}</label>
+              <input type="number" placeholder={placeholder} {...f(key)} style={inputStyle} />
+            </div>
+          ))}
+          <button className="btn-primary" onClick={calcular} style={{ fontSize: 15, padding: 14, marginTop: 4 }}>Calcular composição corporal</button>
+        </div>
+
+        {result && (
+          <div className="card">
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Resultado da análise</div>
+            {[
+              { label: '% de gordura corporal', valor: `${result.gordura}%`, sub: `${result.massaGorda}kg de gordura`, cor: parseFloat(result.gordura) > 30 ? 'var(--red)' : 'var(--copper)' },
+              { label: '% de massa magra', valor: `${(100-parseFloat(result.gordura)).toFixed(1)}%`, sub: `${result.massaMagra}kg de massa magra`, cor: 'var(--green)' },
+              { label: 'IMC', valor: result.imc, sub: imcLabel, cor: imcCor },
+              { label: 'Relação cintura/quadril', valor: result.rcq, sub: result.rcq < 0.85 ? 'Dentro do ideal' : 'Atenção ao risco cardiovascular', cor: result.rcq < 0.85 ? 'var(--green)' : 'var(--yellow)' },
+            ].map(r => (
+              <div key={r.label} style={{ padding: '12px 14px', background: '#FBF7F3', borderRadius: 10, marginBottom: 8 }}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div style={{ fontSize: 13, color: '#8A7060', marginBottom: 2 }}>{r.label}</div>
+                    <div style={{ fontSize: 12, color: r.cor, fontWeight: 500 }}>{r.sub}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 22, color: r.cor }}>{r.valor}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop: 10, padding: '10px 12px', background: '#F5F0EC', borderRadius: 10, fontSize: 12, color: '#8A7060', lineHeight: 1.5 }}>
+              ⚠️ Estimativa baseada no Método da Marinha dos EUA. Não substitui avaliação com bioimpedância ou DEXA.
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: RÊ (chat) ────────────────────────────────────── */
+function ReScreen() {
+  const [msgs, setMsgs] = useState(MSGS_INICIAIS);
+  const [historico, setHistorico] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const endRef = useRef(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+
+  const enviar = async () => {
+    const txt = input.trim();
+    if (!txt || loading) return;
+
+    const novaMsg = { de: 'user', texto: txt };
+    setMsgs(m => [...m, novaMsg]);
+    setInput('');
+    setLoading(true);
+
+    const novoHistorico = [...historico, { role: 'user', content: txt }];
+    setHistorico(novoHistorico);
+
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: SISTEMA_RE },
+            ...novoHistorico,
+          ],
+          max_tokens: 400,
+          temperature: 0.7,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // API retornou erro HTTP (401, 429, 500, etc.)
+        const erroMsg = data?.error?.message || `Erro ${res.status}`;
+        setMsgs(m => [...m, { de: 'rê', texto: `⚠️ Erro da API: ${erroMsg}` }]);
+        setHistorico(h => [...h, { role: 'assistant', content: erroMsg }]);
+        setLoading(false);
+        return;
+      }
+
+      const resposta = data.choices?.[0]?.message?.content || 'Desculpe, tive um problema para responder. Tente novamente!';
+      setMsgs(m => [...m, { de: 'rê', texto: resposta }]);
+      setHistorico(h => [...h, { role: 'assistant', content: resposta }]);
+    } catch (e) {
+      setMsgs(m => [...m, { de: 'rê', texto: `⚠️ Erro de conexão: ${e.message}` }]);
+    }
+
+    setLoading(false);
+  };
+
+  const sugestoes = ['Como puxar 2,5mg na seringa?', 'Esqueci de aplicar, e agora?', 'Estou com enjoo', 'Onde posso aplicar?'];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div className="header-grad px-5 pt-12 pb-5" style={{ flexShrink: 0 }}>
+        <div className="flex items-center gap-3">
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.2)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🌿</div>
+          <div>
+            <div style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 17 }}>Rê</div>
+            <div style={{ color: 'var(--green)', fontSize: 12, fontWeight: 500 }}>● Online</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mensagens */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', background: 'var(--cream-light)' }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: m.de === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
+            {m.de === 'rê' && (
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginRight: 8, flexShrink: 0, alignSelf: 'flex-end' }}>🌿</div>
+            )}
+            <div className={m.de === 'user' ? 'chat-bubble-user' : 'chat-bubble-rê'}
+              style={{ maxWidth: '78%', padding: '10px 14px', fontSize: 14, lineHeight: 1.5, color: m.de === 'user' ? 'white' : 'var(--brown)', whiteSpace: 'pre-wrap' }}>
+              {m.texto}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: 'flex', marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginRight: 8 }}>🌿</div>
+            <div className="chat-bubble-rê" style={{ padding: '14px 18px' }}>
+              <div className="flex gap-1">
+                {[0,1,2].map(i => <div key={i} className="pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--copper)', animationDelay: `${i*0.2}s` }} />)}
+              </div>
+            </div>
+          </div>
+        )}
+        {msgs.length === 1 && (
+          <div>
+            <div style={{ fontSize: 12, color: '#9A8070', textAlign: 'center', marginBottom: 10 }}>Perguntas frequentes</div>
+            <div className="flex flex-col gap-2 mb-4">
+              {sugestoes.map(s => (
+                <button key={s} onClick={() => { setInput(s); }}
+                  style={{ background: 'white', border: '1.5px solid var(--copper-pale)', borderRadius: 20, padding: '10px 16px', fontSize: 13, color: 'var(--brown-light)', cursor: 'pointer', textAlign: 'left', boxShadow: '0 1px 4px rgba(45,31,20,0.06)' }}>
+                  💬 {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: '10px 12px', background: 'white', borderTop: '1px solid #EEE8E0', paddingBottom: 'calc(10px + 72px)', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <input
+          value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !loading && enviar()}
+          placeholder="Pergunte à Rê..."
+          style={{ flex: 1, padding: '12px 14px', borderRadius: 22, border: '1.5px solid #E0D8D0', fontSize: 14, color: 'var(--brown)', background: 'var(--cream-light)' }}
+        />
+        <button onClick={enviar}
+          style={{ width: 44, height: 44, borderRadius: '50%', background: input ? 'var(--copper)' : '#E0D8D0', border: 'none', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .2s' }}>
+          ➤
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TELA: FOTOS (placeholder premium) ─────────────────── */
+function FotosScreen() {
+  return (
+    <div className="screen">
+      <div className="header-grad px-5 pt-12 pb-6">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Espaço de Fotos 📷</h2>
+        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Sua transformação visual — privado e seguro</p>
+      </div>
+      <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Linha do tempo mock */}
+        {[
+          { semana: 'Semana 10 — 12/04', marco: 'Marco 🏆', nota: '10kg a menos! Roupa já cai bem 🎉', cats: ['Marco'] },
+          { semana: 'Semana 8 — 29/03', nota: 'Sentindo leveza, barriga reduzindo', cats: ['Semanal'] },
+          { semana: 'Semana 4 — 01/03', nota: 'Primeiros 5kg! Enjoo diminuindo', cats: ['Semanal'] },
+          { semana: 'Semana 1 — 01/02', nota: 'Início da jornada 🌱', cats: ['Início'] },
+        ].map((item, i) => (
+          <div key={i} className="card">
+            <div className="flex justify-between items-center mb-2">
+              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14 }}>{item.semana}</span>
+              {item.cats.map(c => (
+                <span key={c} className="pill" style={{ background: c === 'Marco' ? '#FFF8E0' : c === 'Início' ? 'var(--copper-pale)' : '#F5F0EC', color: c === 'Marco' ? '#8A6400' : 'var(--brown-light)', fontSize: 11 }}>{c}</span>
+              ))}
+            </div>
+            {/* Foto placeholder */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {['Frente', 'Lado', 'Costas'].map(ang => (
+                <div key={ang} style={{ flex: 1, aspectRatio: '3/4', background: `linear-gradient(135deg, #E8DDD4, var(--copper-pale))`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 24 }}>🔒</span>
+                  <span style={{ fontSize: 10, color: 'var(--brown-light)', fontWeight: 600 }}>{ang}</span>
+                </div>
+              ))}
+            </div>
+            {item.nota && <div style={{ fontSize: 13, color: '#8A7060', fontStyle: 'italic' }}>"{item.nota}"</div>}
+          </div>
+        ))}
+
+        <button className="btn-primary" style={{ fontSize: 15, padding: 14 }}>+ Adicionar fotos de hoje</button>
+
+        <div style={{ padding: '12px 14px', background: 'var(--copper-pale)', borderRadius: 12, fontSize: 13, color: 'var(--brown-light)', lineHeight: 1.5 }}>
+          🔒 Suas fotos são armazenadas de forma criptografada e nunca saem do app. Apenas os <strong>cards de progresso</strong> podem ser compartilhados.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── NAVEGAÇÃO ──────────────────────────────────────────── */
+const TABS = [
+  { id: 'home', label: 'Home', emoji: '🏠' },
+  { id: 'planejador', label: 'Picadinha', emoji: '💉' },
+  { id: 'diario', label: 'Diário', emoji: '📔' },
+  { id: 'peso', label: 'Peso', emoji: '⚖️' },
+  { id: 'rê', label: 'Rê', emoji: '💬' },
+];
+
+/* ─── APP ROOT ───────────────────────────────────────────── */
+function App() {
+  const [tab, setTab] = useState('home');
+
+  const screens = {
+    home: <HomeScreen setTab={setTab} />,
+    planejador: <PlanejadorScreen />,
+    diario: <DiarioScreen />,
+    peso: <PesoScreen />,
+    rê: <ReScreen />,
+    calculadora: <CalculadoraScreen />,
+    fotos: <FotosScreen />,
+  };
+
+  return (
+    <>
+      {/* Tela atual */}
+      <div style={{ position: 'absolute', inset: 0, bottom: 72 }}>
+        {tab === 'rê' ? screens['rê'] : (
+          <div className="screen">
+            {screens[tab]}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Nav */}
+      <div className="bottom-nav">
+        {TABS.map(t => (
+          <button key={t.id} className={`nav-btn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+            <span style={{ fontSize: 22, opacity: tab === t.id ? 1 : 0.45, transition: 'opacity .15s' }}>{t.emoji}</span>
+            <span className="label">{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
