@@ -144,10 +144,6 @@ function HomeScreen({ setTab, perfil }) {
   const perdido    = Math.max(0, pesoInicio - pesoAtual).toFixed(1);
   const progresso  = Math.min(100, Math.max(0, ((pesoInicio - pesoAtual) / (pesoInicio - meta)) * 100)).toFixed(0);
 
-  // Saudação por horário
-  const hora = new Date().getHours();
-  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-
   // Calcular dias de jornada
   const dataInicioDate = perfil?.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : new Date('2025-02-01');
   const hoje = new Date();
@@ -169,13 +165,10 @@ function HomeScreen({ setTab, perfil }) {
       <div className="header-grad px-5 pt-12 pb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>{saudacao} 🌿</p>
+            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>Bom dia 🌿</p>
             <h1 style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 700, margin: 0 }}>{perfil?.nome || 'Guilherme'}</h1>
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button onClick={() => setTab('notificacoes')} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(196,136,90,0.15)', border: '1.5px solid rgba(196,136,90,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: 'pointer' }}>🔔</button>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
-          </div>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.25)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
         </div>
 
         {/* Stats rápidas */}
@@ -195,27 +188,6 @@ function HomeScreen({ setTab, perfil }) {
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-4">
-        {/* Banner de alerta de aplicação */}
-        {diasRestantes === 0 && (
-          <div onClick={() => setTab('planejador')} style={{ background: 'linear-gradient(135deg, var(--copper) 0%, var(--copper-light) 100%)', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer', boxShadow: '0 4px 16px rgba(196,136,90,0.4)' }}>
-            <span style={{ fontSize: 32 }}>💉</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, color: 'white', fontSize: 16 }}>Hoje é dia da picadinha!</div>
-              <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 }}>Toque para registrar sua dose de {perfil?.dose || '5mg'} 🌿</div>
-            </div>
-            <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 22 }}>→</span>
-          </div>
-        )}
-        {diasRestantes === 1 && (
-          <div style={{ background: 'var(--copper-pale)', borderRadius: 14, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', border: '1.5px solid rgba(196,136,90,0.4)' }}>
-            <span style={{ fontSize: 24 }}>⏰</span>
-            <div>
-              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14 }}>Amanhã é dia de aplicar</div>
-              <div style={{ color: '#8A7060', fontSize: 12, marginTop: 2 }}>Prepare sua dose de {perfil?.dose || '5mg'} com antecedência</div>
-            </div>
-          </div>
-        )}
-
         {/* Próxima aplicação */}
         <div className="card" style={{ borderLeft: '4px solid var(--copper)' }}>
           <div className="flex items-center justify-between mb-3">
@@ -924,190 +896,6 @@ function FotosScreen() {
   );
 }
 
-/* ─── TELA: NOTIFICAÇÕES ─────────────────────────────────── */
-function NotificacoesScreen({ perfil }) {
-  const [permissao, setPermissao] = useState(() => {
-    if (!('Notification' in window)) return 'unsupported';
-    return Notification.permission;
-  });
-
-  const defaultConfig = { aplicacao: true, horarioAplicacao: '09:00', peso: false, horarioPeso: '08:00', diario: false, horarioDiario: '21:00' };
-  const [config, setConfig] = useState(() => {
-    try {
-      const saved = localStorage.getItem('renove_notif');
-      return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
-    } catch { return defaultConfig; }
-  });
-
-  const salvarConfig = (nova) => {
-    setConfig(nova);
-    localStorage.setItem('renove_notif', JSON.stringify(nova));
-  };
-  const toggle = (key) => salvarConfig({ ...config, [key]: !config[key] });
-
-  const pedirPermissao = async () => {
-    if (!('Notification' in window)) return;
-    const result = await Notification.requestPermission();
-    setPermissao(result);
-    if (result === 'granted') {
-      new Notification('Renove GLP-1 🌿', {
-        body: 'Notificações ativadas! Vou te lembrar das aplicações 💉',
-      });
-    }
-  };
-
-  const testarNotificacao = () => {
-    if (Notification.permission !== 'granted') return;
-    new Notification('Renove GLP-1 💉', {
-      body: `Lembrete: hoje é dia da sua aplicação de ${perfil?.dose || '5mg'}! Não esqueça 🌿`,
-    });
-  };
-
-  // Calcular próxima aplicação
-  const dataInicioDate = perfil?.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : new Date();
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000*60*60*24)));
-  const semanaAtual = Math.floor(diasJornada / 7);
-  const proximaApl = new Date(dataInicioDate);
-  proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
-  const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000*60*60*24)));
-  const diasSemanaPT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-  const proxDia = diasSemanaPT[proximaApl.getDay()];
-  const proxDataStr = `${proximaApl.getDate().toString().padStart(2,'0')}/${(proximaApl.getMonth()+1).toString().padStart(2,'0')}`;
-
-  const ToggleSwitch = ({ on, onToggle }) => (
-    <button onClick={onToggle} style={{
-      width: 50, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', padding: 3, flexShrink: 0,
-      background: on ? 'var(--copper)' : '#CCC8C0', transition: 'background .25s',
-      display: 'flex', alignItems: 'center', justifyContent: on ? 'flex-end' : 'flex-start',
-    }}>
-      <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.25)', transition: 'all .25s' }} />
-    </button>
-  );
-
-  const TimeRow = ({ label, value, onChange }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 10, borderTop: '1px solid #F0EBE5' }}>
-      <span style={{ fontSize: 13, color: '#8A7060', fontWeight: 600 }}>{label}</span>
-      <input type="time" value={value} onChange={e => onChange(e.target.value)}
-        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #E0D8D0', fontSize: 14, color: 'var(--brown)', background: 'white' }} />
-    </div>
-  );
-
-  return (
-    <div className="screen">
-      <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Notificações 🔔</h2>
-        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Lembretes da sua jornada</p>
-      </div>
-
-      <div className="px-4 py-4 flex flex-col gap-4">
-
-        {/* Status da permissão */}
-        {permissao === 'unsupported' && (
-          <div style={{ background: '#F5F0EC', borderRadius: 14, padding: 16 }}>
-            <div style={{ fontWeight: 700, color: '#8A7060', fontSize: 14 }}>🔕 Notificações não suportadas</div>
-            <p style={{ color: '#9A8070', fontSize: 13, margin: '6px 0 0', lineHeight: 1.5 }}>Seu navegador não suporta notificações. Abra o app no Chrome para Android para receber lembretes.</p>
-          </div>
-        )}
-
-        {permissao === 'default' && (
-          <div style={{ background: 'var(--copper-pale)', borderRadius: 14, padding: 16, border: '1.5px solid rgba(196,136,90,0.4)' }}>
-            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 6 }}>🔔 Ativar lembretes</div>
-            <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>
-              Receba um aviso no dia da aplicação para nunca perder sua picadinha semanal.
-            </p>
-            <button className="btn-primary" onClick={pedirPermissao} style={{ fontSize: 14, padding: '12px 20px' }}>
-              Permitir notificações
-            </button>
-          </div>
-        )}
-
-        {permissao === 'denied' && (
-          <div style={{ background: '#FDECEA', borderRadius: 14, padding: 16, border: '1.5px solid rgba(217,79,79,0.3)' }}>
-            <div style={{ fontWeight: 700, color: 'var(--red)', fontSize: 14 }}>🚫 Notificações bloqueadas</div>
-            <p style={{ color: '#8A7060', fontSize: 13, margin: '6px 0 0', lineHeight: 1.5 }}>
-              Para reativar, vá em Configurações do navegador → Notificações → permita este site.
-            </p>
-          </div>
-        )}
-
-        {permissao === 'granted' && (
-          <div style={{ background: '#E8F8EE', borderRadius: 14, padding: '14px 16px', border: '1.5px solid rgba(76,175,122,0.4)', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 28 }}>✅</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 14 }}>Notificações ativas!</div>
-              <div style={{ fontSize: 12, color: '#4CAF7A', marginTop: 2 }}>Você receberá lembretes no celular</div>
-            </div>
-            <button onClick={testarNotificacao} style={{ background: 'none', border: '1.5px solid #4CAF7A', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#2E7D52', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              Testar 🔔
-            </button>
-          </div>
-        )}
-
-        {/* Card: próxima aplicação */}
-        <div className="card" style={{ borderLeft: '4px solid var(--copper)' }}>
-          <div style={{ fontSize: 12, color: '#9A8070', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Próxima aplicação</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: diasRestantes === 0 ? 'var(--green)' : 'var(--copper)', marginBottom: 2 }}>
-            {diasRestantes === 0 ? 'Hoje! 🎯' : diasRestantes === 1 ? 'Amanhã ⏰' : `${diasRestantes} dias`}
-          </div>
-          <div style={{ fontSize: 13, color: '#8A7060' }}>{proxDia}, {proxDataStr} · {perfil?.dose || '5mg'}</div>
-        </div>
-
-        {/* Toggle: Aplicação */}
-        <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Lembretes configurados</div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>💉 Dia da picadinha</div>
-              <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>Lembrete no dia da aplicação semanal</div>
-            </div>
-            <ToggleSwitch on={config.aplicacao} onToggle={() => toggle('aplicacao')} />
-          </div>
-          {config.aplicacao && (
-            <TimeRow label="Horário:" value={config.horarioAplicacao}
-              onChange={v => salvarConfig({ ...config, horarioAplicacao: v })} />
-          )}
-        </div>
-
-        {/* Toggle: Peso */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>⚖️ Registro de peso</div>
-              <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>Lembrete semanal para se pesar</div>
-            </div>
-            <ToggleSwitch on={config.peso} onToggle={() => toggle('peso')} />
-          </div>
-          {config.peso && (
-            <TimeRow label="Horário:" value={config.horarioPeso}
-              onChange={v => salvarConfig({ ...config, horarioPeso: v })} />
-          )}
-        </div>
-
-        {/* Toggle: Diário */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>📔 Diário de sintomas</div>
-              <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>Lembrete diário para registrar seu dia</div>
-            </div>
-            <ToggleSwitch on={config.diario} onToggle={() => toggle('diario')} />
-          </div>
-          {config.diario && (
-            <TimeRow label="Horário:" value={config.horarioDiario}
-              onChange={v => salvarConfig({ ...config, horarioDiario: v })} />
-          )}
-        </div>
-
-        <div style={{ padding: '12px 14px', background: '#F5F0EC', borderRadius: 12, fontSize: 13, color: '#8A7060', lineHeight: 1.6 }}>
-          ℹ️ Os lembretes funcionam quando o app está aberto. Para receber mesmo com o app fechado, adicione o Renove à tela inicial do seu celular (opção "Adicionar à tela inicial" no navegador).
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── TELA: ONBOARDING ───────────────────────────────────── */
 function OnboardingScreen({ onComplete }) {
   const [step, setStep] = useState(0);
@@ -1268,33 +1056,6 @@ function App() {
     } catch { return null; }
   });
 
-  // Disparar notificação do navegador ao abrir o app no dia da aplicação
-  useEffect(() => {
-    if (!perfil || !('Notification' in window) || Notification.permission !== 'granted') return;
-    const cfg = (() => { try { return JSON.parse(localStorage.getItem('renove_notif') || '{}'); } catch { return {}; } })();
-    if (cfg.aplicacao === false) return;
-
-    const dataInicioDate = perfil.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : null;
-    if (!dataInicioDate) return;
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000*60*60*24)));
-    const semanaAtual = Math.floor(diasJornada / 7);
-    const proximaApl = new Date(dataInicioDate);
-    proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
-    const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000*60*60*24)));
-
-    if (diasRestantes === 0) {
-      const hoje2 = new Date().toISOString().split('T')[0];
-      const ultimaNotif = localStorage.getItem('renove_ultima_notif');
-      if (ultimaNotif !== hoje2) {
-        new Notification('Renove GLP-1 💉', {
-          body: `Hoje é dia da sua aplicação de ${perfil.dose || '5mg'}! Não esqueça 🌿`,
-        });
-        localStorage.setItem('renove_ultima_notif', hoje2);
-      }
-    }
-  }, [perfil]);
-
   // Primeiro acesso → mostrar onboarding
   if (!perfil) {
     return <OnboardingScreen onComplete={p => setPerfil(p)} />;
@@ -1308,7 +1069,6 @@ function App() {
     rê: <ReScreen />,
     calculadora: <CalculadoraScreen />,
     fotos: <FotosScreen />,
-    notificacoes: <NotificacoesScreen perfil={perfil} />,
   };
 
   return (
@@ -1317,7 +1077,7 @@ function App() {
       <div style={{ position: 'absolute', inset: 0, bottom: 72 }}>
         {tab === 'rê' ? screens['rê'] : (
           <div className="screen">
-            {screens[tab] || screens['home']}
+            {screens[tab]}
           </div>
         )}
       </div>
