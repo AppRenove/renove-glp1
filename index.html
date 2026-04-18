@@ -55,21 +55,7 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
 
-/* ─── DADOS MOCK ──────────────────────────────────────────── */
-const MOCK_PESOS = [
-  { data: '01/02', peso: 112.4 },
-  { data: '08/02', peso: 110.8 },
-  { data: '15/02', peso: 109.2 },
-  { data: '22/02', peso: 107.9 },
-  { data: '01/03', peso: 106.5 },
-  { data: '08/03', peso: 105.1 },
-  { data: '15/03', peso: 103.8 },
-  { data: '22/03', peso: 102.4 },
-  { data: '29/03', peso: 101.2 },
-  { data: '05/04', peso: 100.1 },
-  { data: '12/04', peso: 98.9 },
-];
-
+/* ─── DADOS ───────────────────────────────────────────────── */
 const LOCAIS = ['Abdômen esquerdo', 'Abdômen direito', 'Coxa esquerda', 'Coxa direita', 'Braço esquerdo', 'Braço direito'];
 
 const MSGS_INICIAIS = [
@@ -426,11 +412,45 @@ function PlanejadorScreen() {
 
 /* ─── TELA: DIÁRIO ───────────────────────────────────────── */
 function DiarioScreen() {
-  const [sintomas, setSintomas] = useState({
+  const hoje = new Date();
+  const dataISO = hoje.toISOString().split('T')[0];
+  const mesesPT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const dataStr = `${hoje.getDate()} de ${mesesPT[hoje.getMonth()]}`;
+
+  // Carrega todas as entradas do localStorage
+  const [entradas, setEntradas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_diario') || '{}'); } catch { return {}; }
+  });
+
+  const entradaHoje = entradas[dataISO] || null;
+
+  const [sintomas, setSintomas] = useState(entradaHoje?.sintomas || {
     nausea: 0, vomito: 0, constipacao: 0, dor: 0, tontura: 0, local: 0,
   });
-  const [hydra, setHydra] = useState(1.5);
-  const [saved, setSaved] = useState(false);
+  const [hydra, setHydra] = useState(entradaHoje?.hydra || 1.5);
+  const [saved, setSaved] = useState(!!entradaHoje);
+
+  // Calcula sequência real de dias consecutivos
+  const calcStreak = (entradasObj) => {
+    let streak = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const iso = d.toISOString().split('T')[0];
+      if (!entradasObj[iso]) break;
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  };
+
+  const salvar = () => {
+    const novas = { ...entradas, [dataISO]: { sintomas, hydra, salvoEm: new Date().toISOString() } };
+    setEntradas(novas);
+    localStorage.setItem('renove_diario', JSON.stringify(novas));
+    setSaved(true);
+  };
+
+  const streak = calcStreak(saved ? { ...entradas, [dataISO]: true } : entradas);
 
   const niveis = ['Nenhum', 'Leve', 'Moderado', 'Intenso'];
   const listaSintomas = [
@@ -443,19 +463,35 @@ function DiarioScreen() {
   ];
 
   const maxSintoma = Math.max(...Object.values(sintomas));
-  const semaforo = maxSintoma === 0 ? 'verde' : maxSintoma <= 1 ? 'verde' : maxSintoma === 2 ? 'amarelo' : 'vermelho';
+  const semaforo = maxSintoma <= 1 ? 'verde' : maxSintoma === 2 ? 'amarelo' : 'vermelho';
   const msgSemaforo = {
     verde: { cor: 'var(--green)', bg: '#E8F8EE', txt: 'Tudo certo! Continue hidratando bem e priorizando proteína 💚', emoji: '🟢' },
     amarelo: { cor: 'var(--yellow)', bg: '#FFF8E0', txt: 'Cuide-se! Coma devagar, em pequenas porções, e descanse quando precisar 💛', emoji: '🟡' },
-    vermelho: { cor: 'var(--red)', bg: '#FDECEA', txt: 'Sintomas intensos — fale com seu médico hoje ❤️', emoji: '🔴' },
+    vermelho: { cor: 'var(--red)', bg: '#FDECEA', txt: 'Sintomas intensos — considere falar com seu médico ❤️', emoji: '🔴' },
   };
   const s = msgSemaforo[semaforo];
+
+  // Entradas recentes para o mini histórico
+  const entradasRecentes = Object.entries(entradas)
+    .sort((a, b) => b[0] > a[0] ? 1 : -1)
+    .slice(0, 5);
 
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Diário de Sintomas 📔</h2>
-        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Hoje, 17 de abril</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Diário de Sintomas 📔</h2>
+            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Hoje, {dataStr}</p>
+          </div>
+          {streak > 0 && (
+            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 14px' }}>
+              <div style={{ fontSize: 20 }}>🔥</div>
+              <div style={{ color: 'var(--copper-light)', fontWeight: 800, fontSize: 16, lineHeight: 1 }}>{streak}</div>
+              <div style={{ color: 'rgba(245,237,227,0.6)', fontSize: 10 }}>dias</div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-4">
@@ -520,13 +556,42 @@ function DiarioScreen() {
         </div>
 
         {!saved ? (
-          <button className="btn-primary" onClick={() => setSaved(true)} style={{ fontSize: 16, padding: 16 }}>
-            Salvar registro de hoje
+          <button className="btn-primary" onClick={salvar} style={{ fontSize: 16, padding: 16 }}>
+            💾 Salvar registro de hoje
           </button>
         ) : (
           <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
             <div style={{ fontSize: 28, marginBottom: 4 }}>✅</div>
-            <div style={{ fontWeight: 700, color: '#2E7D52' }}>Registro salvo! Sequência: 🔥 5 dias</div>
+            <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 15 }}>
+              Registro salvo!{streak > 1 ? ` Sequência: 🔥 ${streak} dias` : ' Primeiro dia registrado 🌱'}
+            </div>
+            <button onClick={() => setSaved(false)} style={{ background: 'none', border: 'none', color: '#4CAF7A', fontSize: 12, cursor: 'pointer', marginTop: 6, fontWeight: 600 }}>
+              Editar registro →
+            </button>
+          </div>
+        )}
+
+        {/* Mini histórico */}
+        {entradasRecentes.length > 1 && (
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Registros anteriores</div>
+            {entradasRecentes.map(([iso, entrada]) => {
+              if (iso === dataISO) return null;
+              const d = new Date(iso + 'T00:00:00');
+              const dataFormatada = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              const max = Math.max(...Object.values(entrada.sintomas || {}));
+              const cor = max <= 1 ? 'var(--green)' : max === 2 ? 'var(--yellow)' : 'var(--red)';
+              const emoji = max <= 1 ? '🟢' : max === 2 ? '🟡' : '🔴';
+              return (
+                <div key={iso} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{dataFormatada}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{emoji}</span>
+                    <span style={{ fontSize: 12, color: '#9A8070' }}>💧 {(entrada.hydra || 0).toFixed(1)}L</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -535,25 +600,60 @@ function DiarioScreen() {
 }
 
 /* ─── TELA: PESO ─────────────────────────────────────────── */
-function PesoScreen() {
-  const [pesos, setPesos] = useState(MOCK_PESOS);
+function PesoScreen({ perfil }) {
+  const meta = parseFloat(perfil?.meta) || 85;
+  const pesoInicialPerfil = parseFloat(perfil?.pesoInicio) || 112.4;
+  const dataInicioPerfil = perfil?.dataInicio || '2025-02-01';
+
+  const fmtData = (isoStr) => {
+    const d = new Date(isoStr + 'T00:00:00');
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  };
+
+  // Carrega do localStorage, semeando com dados do perfil se vazio
+  const [pesos, setPesos] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('renove_pesos') || 'null');
+      if (saved && saved.length > 0) return saved;
+    } catch {}
+    const entries = [{ data: fmtData(dataInicioPerfil), peso: pesoInicialPerfil, dataISO: dataInicioPerfil }];
+    const pesoAtualPerfil = parseFloat(perfil?.pesoAtual);
+    if (pesoAtualPerfil && pesoAtualPerfil !== pesoInicialPerfil) {
+      const hoje = new Date().toISOString().split('T')[0];
+      if (hoje !== dataInicioPerfil) entries.push({ data: fmtData(hoje), peso: pesoAtualPerfil, dataISO: hoje });
+    }
+    return entries;
+  });
+
   const [novoPeso, setNovoPeso] = useState('');
   const [periodo, setPeriodo] = useState('all');
+  const [adicionado, setAdicionado] = useState(false);
 
-  const dadosFiltrados = periodo === '30' ? pesos.slice(-5) : periodo === '14' ? pesos.slice(-3) : pesos;
+  const salvarPesos = (arr) => {
+    setPesos(arr);
+    localStorage.setItem('renove_pesos', JSON.stringify(arr));
+  };
+
+  const nPts = { '14': 3, '30': 6, 'all': pesos.length };
+  const dadosFiltrados = pesos.slice(-nPts[periodo]);
   const pesoAtual = pesos[pesos.length - 1].peso;
   const pesoInicio = pesos[0].peso;
-  const perdido = (pesoInicio - pesoAtual).toFixed(1);
-  const meta = 85;
-  const progresso = ((pesoInicio - pesoAtual) / (pesoInicio - meta) * 100).toFixed(0);
+  const perdido = Math.max(0, pesoInicio - pesoAtual).toFixed(1);
+  const progresso = Math.max(0, Math.min(100, ((pesoInicio - pesoAtual) / (pesoInicio - meta) * 100))).toFixed(0);
+  const faltaMeta = Math.max(0, pesoAtual - meta).toFixed(1);
 
   const adicionar = () => {
     const p = parseFloat(novoPeso.replace(',', '.'));
     if (!p || p < 30 || p > 300) return;
     const hoje = new Date();
-    const data = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
-    setPesos(prev => [...prev, { data, peso: p }]);
+    const dataISO = hoje.toISOString().split('T')[0];
+    const data = fmtData(dataISO);
+    // Substitui se já existe entrada de hoje
+    const filtrado = pesos.filter(x => x.dataISO !== dataISO);
+    salvarPesos([...filtrado, { data, peso: p, dataISO }].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1));
     setNovoPeso('');
+    setAdicionado(true);
+    setTimeout(() => setAdicionado(false), 2500);
   };
 
   return (
@@ -568,8 +668,8 @@ function PesoScreen() {
         <div className="flex gap-3">
           {[
             { label: 'Peso atual', valor: `${pesoAtual}kg`, cor: 'var(--brown)' },
-            { label: 'Perdidos', valor: `↓ ${perdido}kg`, cor: 'var(--green)' },
-            { label: 'Meta', valor: `${meta}kg`, cor: 'var(--copper)' },
+            { label: 'Perdidos', valor: perdido > 0 ? `↓ ${perdido}kg` : '—', cor: 'var(--green)' },
+            { label: 'Falta p/ meta', valor: `${faltaMeta}kg`, cor: 'var(--copper)' },
           ].map(s => (
             <div key={s.label} className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px' }}>
               <div style={{ fontWeight: 800, fontSize: 17, color: s.cor }}>{s.valor}</div>
@@ -581,7 +681,7 @@ function PesoScreen() {
         {/* Progresso meta */}
         <div className="card">
           <div className="flex justify-between items-center mb-2">
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>Progresso até a meta</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>Progresso até {meta}kg</span>
             <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--copper)' }}>{progresso}%</span>
           </div>
           <div style={{ height: 10, background: '#EEE8E0', borderRadius: 5 }}>
@@ -593,49 +693,69 @@ function PesoScreen() {
           </div>
         </div>
 
-        {/* Gráfico */}
-        <div className="card">
-          <div className="flex justify-between items-center mb-3">
-            <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Gráfico</span>
-            <div className="flex gap-1">
-              {[['14','14d'],['30','30d'],['all','Tudo']].map(([v,l]) => (
-                <button key={v} onClick={() => setPeriodo(v)}
-                  style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
-                    background: periodo === v ? 'var(--copper)' : '#F5F0EC',
-                    color: periodo === v ? 'white' : '#8A7060' }}>{l}</button>
-              ))}
-            </div>
-          </div>
-          <WeightChart dados={dadosFiltrados} meta={meta} />
-        </div>
-
-        {/* Adicionar peso */}
+        {/* Registrar novo peso */}
         <div className="card">
           <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Registrar novo peso</div>
-          <div className="flex gap-2">
-            <input
-              type="number" placeholder="Ex: 97,5" value={novoPeso}
-              onChange={e => setNovoPeso(e.target.value)}
-              style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)' }}
-            />
-            <button onClick={adicionar} className="btn-primary" style={{ width: 'auto', padding: '12px 20px', fontSize: 15 }}>
-              + Adicionar
-            </button>
-          </div>
+          {adicionado ? (
+            <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 10, padding: '12px 16px', textAlign: 'center', color: '#2E7D52', fontWeight: 700, fontSize: 15 }}>
+              ✅ Peso registrado!
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="number" inputMode="decimal" placeholder="Ex: 97,5" value={novoPeso}
+                onChange={e => setNovoPeso(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && adicionar()}
+                style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)' }}
+              />
+              <button onClick={adicionar} className="btn-primary" style={{ width: 'auto', padding: '12px 20px', fontSize: 15 }}>
+                + Salvar
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Gráfico */}
+        {pesos.length >= 2 && (
+          <div className="card">
+            <div className="flex justify-between items-center mb-3">
+              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Gráfico</span>
+              <div className="flex gap-1">
+                {[['14','14d'],['30','30d'],['all','Tudo']].map(([v,l]) => (
+                  <button key={v} onClick={() => setPeriodo(v)}
+                    style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
+                      background: periodo === v ? 'var(--copper)' : '#F5F0EC',
+                      color: periodo === v ? 'white' : '#8A7060' }}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <WeightChart dados={dadosFiltrados.length >= 2 ? dadosFiltrados : pesos} meta={meta} />
+          </div>
+        )}
 
         {/* Histórico */}
         <div>
           <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico</div>
-          {[...pesos].reverse().slice(0, 6).map((p, i) => (
-            <div key={i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
-              <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{p.data}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {i < pesos.length - 1 && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>↓ {(pesos[pesos.length - 1 - i].peso - pesos[pesos.length - 2 - i]?.peso).toFixed(1)}kg</span>}
-                <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--brown)' }}>{p.peso}kg</span>
+          {[...pesos].reverse().map((p, i, arr) => {
+            const anterior = arr[i + 1];
+            const diff = anterior ? (p.peso - anterior.peso) : null;
+            return (
+              <div key={p.dataISO || i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{p.data}</div>
+                  {i === 0 && <div style={{ fontSize: 11, color: 'var(--copper)', fontWeight: 600, marginTop: 1 }}>Mais recente</div>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {diff !== null && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : '#9A8070' }}>
+                      {diff < 0 ? `↓ ${Math.abs(diff).toFixed(1)}kg` : diff > 0 ? `↑ ${diff.toFixed(1)}kg` : '—'}
+                    </span>
+                  )}
+                  <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--brown)' }}>{p.peso}kg</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1304,7 +1424,7 @@ function App() {
     home: <HomeScreen setTab={setTab} perfil={perfil} />,
     planejador: <PlanejadorScreen />,
     diario: <DiarioScreen />,
-    peso: <PesoScreen />,
+    peso: <PesoScreen perfil={perfil} />,
     rê: <ReScreen />,
     calculadora: <CalculadoraScreen />,
     fotos: <FotosScreen />,
