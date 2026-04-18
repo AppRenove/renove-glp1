@@ -100,6 +100,8 @@ function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }) {
     check: <polyline points="20 6 9 11 4 16"/>,
     droplet: <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>,
     zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
+    'arrow-left': <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
+    'x': <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -1275,144 +1277,318 @@ function NotificacoesScreen({ perfil }) {
 }
 
 /* ─── TELA: ONBOARDING ───────────────────────────────────── */
+function NumberStepper({ value, onChange, min = 40, max = 300, step = 0.5, unit = 'kg' }) {
+  const dec = () => onChange(Math.max(min, parseFloat((+value - step).toFixed(1))));
+  const inc = () => onChange(Math.min(max, parseFloat((+value + step).toFixed(1))));
+  const btnStyle = { width: 64, height: 64, borderRadius: '50%', border: '2px solid #EDE6DC', background: 'white', fontSize: 30, fontWeight: 300, cursor: 'pointer', color: 'var(--brown)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', flexShrink: 0, lineHeight: 1 };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '12px 0', width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+        <button onClick={dec} style={btnStyle}>−</button>
+        <div style={{ textAlign: 'center', minWidth: 130 }}>
+          <div style={{ fontSize: 72, fontWeight: 800, color: 'var(--brown)', lineHeight: 1, letterSpacing: '-2px' }}>{value}</div>
+          <div style={{ fontSize: 20, color: 'var(--copper)', fontWeight: 700, marginTop: 6 }}>{unit}</div>
+        </div>
+        <button onClick={inc} style={btnStyle}>+</button>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        style={{ width: '76%', accentColor: 'var(--copper)', height: 4 }} />
+    </div>
+  );
+}
+
 function OnboardingScreen({ onComplete }) {
+  const TOTAL = 11;
   const [step, setStep] = useState(0);
   const [dados, setDados] = useState({
-    nome: '',
-    pesoInicio: '',
-    pesoAtual: '',
-    meta: '',
-    dose: '5mg',
+    status: '', nome: '', medicamento: '', dose: '5mg',
     dataInicio: new Date().toISOString().split('T')[0],
+    sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
   });
 
-  const set = (k, v) => setDados(prev => ({ ...prev, [k]: v }));
-
+  const set = (k, v) => setDados(p => ({ ...p, [k]: v }));
+  const toggleObj = id => setDados(p => ({
+    ...p, objetivos: p.objetivos.includes(id) ? p.objetivos.filter(o => o !== id) : [...p.objetivos, id],
+  }));
+  const next = () => setStep(s => s + 1);
+  const back = () => setStep(s => s - 1);
   const salvar = () => {
     const perfil = { ...dados, criadoEm: new Date().toISOString() };
     localStorage.setItem('renove_perfil', JSON.stringify(perfil));
     onComplete(perfil);
   };
 
-  const doses = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg'];
+  const pct = step === 0 ? 0 : Math.min(100, Math.round((step / TOTAL) * 100));
 
-  const inputStyle = {
-    width: '100%', padding: '14px 16px', borderRadius: 12, fontSize: 16,
-    border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)',
-    fontFamily: 'inherit', boxSizing: 'border-box',
-  };
-  const labelStyle = { fontWeight: 600, color: 'var(--brown)', fontSize: 14, display: 'block', marginBottom: 8 };
+  const medicamentos = [
+    { id: 'tirzepatida-generica', label: 'Tirzepatida Genérica', sub: 'Composto manipulado', icon: '💊' },
+    { id: 'mounjaro', label: 'Mounjaro®', sub: 'Tirzepatida – Eli Lilly', icon: '💊' },
+    { id: 'zepbound', label: 'Zepbound®', sub: 'Tirzepatida – Eli Lilly', icon: '💊' },
+    { id: 'semaglutida-generica', label: 'Semaglutida Genérica', sub: 'Composto manipulado', icon: '💊' },
+    { id: 'ozempic', label: 'Ozempic®', sub: 'Semaglutida – Novo Nordisk', icon: '💊' },
+    { id: 'wegovy', label: 'Wegovy®', sub: 'Semaglutida – Novo Nordisk', icon: '💊' },
+    { id: 'rybelsus', label: 'Rybelsus®', sub: 'Semaglutida oral – Novo Nordisk', icon: '💊' },
+    { id: 'saxenda', label: 'Saxenda®', sub: 'Liraglutida – Novo Nordisk', icon: '💊' },
+    { id: 'trulicity', label: 'Trulicity®', sub: 'Dulaglutida – Eli Lilly', icon: '💊' },
+    { id: 'retatrutida', label: 'Retatrutida', sub: 'Em desenvolvimento clínico', icon: '🧪' },
+    { id: 'outro', label: 'Outro GLP-1', sub: 'Não listado acima', icon: '🧪' },
+    { id: 'nao-sei', label: 'Ainda não decidi', sub: 'Vou escolher com meu médico', icon: '❓' },
+  ];
+  const doses = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Dose personalizada', 'Ainda não sei minha dose'];
+  const objetivos = [
+    { id: 'saude', label: 'Melhorar minha saúde geral', icon: '❤️' },
+    { id: 'disposicao', label: 'Ter mais disposição e energia', icon: '⚡' },
+    { id: 'roupas', label: 'Vestir roupas menores', icon: '👗' },
+    { id: 'autoestima', label: 'Aumentar minha autoestima', icon: '✨' },
+    { id: 'diabetes', label: 'Controlar diabetes/glicemia', icon: '🩺' },
+    { id: 'social', label: 'Vida social mais ativa', icon: '🎉' },
+    { id: 'sono', label: 'Melhorar qualidade do sono', icon: '😴' },
+  ];
 
-  const steps = [
-    // ── Passo 0: Boas-vindas ──
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="header-grad" style={{ padding: '70px 28px 44px', textAlign: 'center', flexShrink: 0 }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🌿</div>
-        <h1 style={{ color: 'var(--cream)', fontSize: 26, fontWeight: 800, margin: '0 0 10px' }}>Bem-vindo ao Renove</h1>
-        <p style={{ color: 'rgba(245,237,227,0.65)', fontSize: 15, margin: 0, lineHeight: 1.6 }}>
-          Sua jornada GLP-1 começa aqui.<br />Vamos configurar tudo em 2 minutinhos.
-        </p>
+  const CheckCircle = ({ on }) => (
+    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : '#CCC4BA'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+      {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+    </div>
+  );
+  const CheckSquare = ({ on }) => (
+    <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${on ? 'var(--copper)' : '#CCC4BA'}`, background: on ? 'var(--copper)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+      {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+    </div>
+  );
+  const OBHeader = ({ title, subtitle }) => (
+    <div style={{ padding: '52px 24px 18px', background: 'white', flexShrink: 0 }}>
+      <div style={{ height: 4, background: '#EDE6DC', borderRadius: 2, marginBottom: 20, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--copper) 0%, var(--copper-light) 100%)', borderRadius: 2, transition: 'width .4s ease' }} />
       </div>
-      <div style={{ flex: 1, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div>
-          <label style={labelStyle}>Como posso te chamar? 👋</label>
-          <input
-            value={dados.nome}
-            onChange={e => set('nome', e.target.value)}
-            placeholder="Seu primeiro nome"
-            style={inputStyle}
-          />
-        </div>
-        <div style={{ marginTop: 'auto' }}>
-          <button className="btn-primary" disabled={!dados.nome.trim()}
-            onClick={() => setStep(1)}
-            style={{ opacity: dados.nome.trim() ? 1 : 0.45 }}>
-            Próximo →
-          </button>
-        </div>
+      <button onClick={back} style={{ width: 36, height: 36, borderRadius: '50%', background: '#F5F0EC', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginBottom: 18 }}>
+        <Icon name="arrow-left" size={18} color="#5A3E28" strokeWidth={2.2} />
+      </button>
+      <h2 style={{ fontSize: 27, fontWeight: 800, color: '#1A1008', margin: '0 0 8px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>{title}</h2>
+      {subtitle && <p style={{ fontSize: 14, color: '#9A8070', margin: 0, lineHeight: 1.5 }}>{subtitle}</p>}
+    </div>
+  );
+  const OptionRow = ({ selected, onClick, icon, label, sublabel }) => (
+    <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderRadius: 14, border: `2px solid ${selected ? 'var(--copper)' : '#EDE6DC'}`, background: selected ? 'rgba(196,136,90,0.06)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}>
+      {icon && <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{icon}</span>}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, color: selected ? 'var(--copper)' : '#1A1008', fontSize: 15, lineHeight: 1.3 }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>{sublabel}</div>}
       </div>
-    </div>,
+      <CheckCircle on={selected} />
+    </button>
+  );
+  const OBFooter = ({ onPress, disabled = false, label = 'Continuar' }) => (
+    <div style={{ padding: '14px 24px 36px', background: 'white', borderTop: '1px solid #F0E8DE', flexShrink: 0 }}>
+      <button className="btn-primary" onClick={onPress} disabled={disabled} style={{ opacity: disabled ? 0.38 : 1 }}>{label}</button>
+    </div>
+  );
+  const Wrap = ({ children }) => (
+    <div style={{ position: 'absolute', inset: 0, background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>{children}</div>
+  );
 
-    // ── Passo 1: Pesos ──
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="header-grad" style={{ padding: '60px 24px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          {[0,1,2].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i <= 1 ? 'var(--copper)' : 'rgba(255,255,255,0.2)' }} />)}
+  /* ── Step 0: Splash ── */
+  if (step === 0) return (
+    <Wrap>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px 24px', textAlign: 'center', background: 'linear-gradient(180deg, #FBF7F3 0%, white 60%)' }}>
+        <div style={{ width: 96, height: 96, borderRadius: 26, background: 'linear-gradient(135deg, var(--copper-pale) 0%, rgba(196,136,90,0.12) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, marginBottom: 24, boxShadow: '0 8px 32px rgba(196,136,90,0.22)' }}>🌿</div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--brown)', margin: '0 0 12px', lineHeight: 1.15, letterSpacing: '-1px' }}>Renove GLP-1</h1>
+        <p style={{ color: '#9A8070', fontSize: 15, margin: '0 0 36px', lineHeight: 1.65, maxWidth: 270 }}>Controle suas aplicações, acompanhe seu progresso e transforme sua jornada.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320 }}>
+          {[{ icon: '💉', t: 'Lembretes de aplicação semanais' }, { icon: '⚖️', t: 'Histórico de peso e metas' }, { icon: '🤖', t: 'Assistente Rê sempre disponível' }].map(f => (
+            <div key={f.t} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', background: 'white', borderRadius: 12, border: '1px solid #EDE6DC', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', textAlign: 'left' }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{f.icon}</span>
+              <span style={{ color: 'var(--brown)', fontSize: 13, fontWeight: 500 }}>{f.t}</span>
+            </div>
+          ))}
         </div>
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Seu peso ⚖️</h2>
-        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Dados ficam somente no seu aparelho</p>
       </div>
-      <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
-        {[
-          { key: 'pesoInicio', label: 'Peso no início do tratamento (kg)', placeholder: 'ex: 112.4' },
-          { key: 'pesoAtual',  label: 'Peso atual (kg)',                    placeholder: 'ex: 98.9'  },
-          { key: 'meta',       label: 'Meta de peso (kg)',                  placeholder: 'ex: 85'    },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key}>
-            <label style={labelStyle}>{label}</label>
-            <input type="number" inputMode="decimal" value={dados[key]}
-              onChange={e => set(key, e.target.value)}
-              placeholder={placeholder} style={inputStyle} />
-          </div>
+      <div style={{ padding: '16px 24px 40px', background: 'white', borderTop: '1px solid #F0E8DE' }}>
+        <button className="btn-primary" onClick={next}>Começar →</button>
+      </div>
+    </Wrap>
+  );
+
+  /* ── Step 1: Status ── */
+  if (step === 1) return (
+    <Wrap>
+      <OBHeader title="Pronto para começar sua jornada?" subtitle="Onde você está no tratamento GLP-1?" />
+      <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+        <OptionRow selected={dados.status === 'usando'} onClick={() => set('status', 'usando')} icon="💉" label="Já estou usando GLP-1" sublabel="Tenho histórico de aplicações" />
+        <OptionRow selected={dados.status === 'iniciando'} onClick={() => set('status', 'iniciando')} icon="🌱" label="Quero começar com GLP-1" sublabel="Ainda não iniciei o tratamento" />
+      </div>
+      <OBFooter onPress={next} disabled={!dados.status} />
+    </Wrap>
+  );
+
+  /* ── Step 2: Nome ── */
+  if (step === 2) return (
+    <Wrap>
+      <OBHeader title="Como podemos te chamar?" subtitle="Seu nome personaliza a sua experiência no app" />
+      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+        <input value={dados.nome} onChange={e => set('nome', e.target.value)}
+          placeholder="Seu primeiro nome" autoFocus
+          style={{ width: '100%', padding: '16px 18px', borderRadius: 14, fontSize: 18, border: `2px solid ${dados.nome ? 'var(--copper)' : '#EDE6DC'}`, background: 'white', color: 'var(--brown)', fontFamily: 'inherit', fontWeight: 600, outline: 'none', transition: 'border-color .2s', boxSizing: 'border-box' }} />
+        <p style={{ color: '#9A8070', fontSize: 12, margin: '12px 0 0', lineHeight: 1.5 }}>🔒 Seus dados ficam apenas no seu aparelho</p>
+      </div>
+      <OBFooter onPress={next} disabled={!dados.nome.trim()} />
+    </Wrap>
+  );
+
+  /* ── Step 3: Medicamento ── */
+  if (step === 3) return (
+    <Wrap>
+      <OBHeader title="Qual medicamento GLP-1 você usa?" subtitle="Se não estiver listado, escolha 'Outro'" />
+      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        {medicamentos.map(m => (
+          <OptionRow key={m.id} selected={dados.medicamento === m.id} onClick={() => set('medicamento', m.id)} icon={m.icon} label={m.label} sublabel={m.sub} />
         ))}
-        <div style={{ display: 'flex', gap: 10, marginTop: 'auto', paddingTop: 8 }}>
-          <button onClick={() => setStep(0)} style={{ flex: 1, padding: 14, borderRadius: 12, border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>← Voltar</button>
-          <button className="btn-primary" style={{ flex: 2, opacity: dados.pesoInicio && dados.pesoAtual && dados.meta ? 1 : 0.45 }}
-            disabled={!dados.pesoInicio || !dados.pesoAtual || !dados.meta}
-            onClick={() => setStep(2)}>Próximo →</button>
-        </div>
       </div>
-    </div>,
+      <OBFooter onPress={next} disabled={!dados.medicamento} />
+    </Wrap>
+  );
 
-    // ── Passo 2: Tratamento ──
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="header-grad" style={{ padding: '60px 24px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          {[0,1,2].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: 'var(--copper)' }} />)}
-        </div>
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Seu tratamento 💉</h2>
-        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Para calcular sua próxima picadinha</p>
+  /* ── Step 4: Dose ── */
+  if (step === 4) return (
+    <Wrap>
+      <OBHeader title="Qual é a sua dosagem?" subtitle="Escolha a dose que você usa ou quer usar" />
+      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        {doses.map(d => (
+          <OptionRow key={d} selected={dados.dose === d} onClick={() => set('dose', d)} label={d} />
+        ))}
       </div>
-      <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
-        <div>
-          <label style={labelStyle}>Dose atual</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {doses.map(d => (
-              <button key={d} onClick={() => set('dose', d)} style={{
-                padding: '10px 16px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                background: dados.dose === d ? 'var(--copper)' : '#F5F0EC',
-                color: dados.dose === d ? 'white' : 'var(--brown-light)',
-                border: dados.dose === d ? '2px solid var(--copper)' : '2px solid #E8DDD4',
-                transition: 'all .15s',
-              }}>{d}</button>
+      <OBFooter onPress={next} />
+    </Wrap>
+  );
+
+  /* ── Step 5: Data início ── */
+  if (step === 5) return (
+    <Wrap>
+      <OBHeader title="Quando foi sua primeira aplicação?" subtitle="Calculamos sua janela semanal a partir desta data" />
+      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+        <input type="date" value={dados.dataInicio} onChange={e => set('dataInicio', e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          style={{ width: '100%', padding: '16px', borderRadius: 14, fontSize: 16, border: '2px solid var(--copper)', background: 'white', color: 'var(--brown)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+        <div style={{ marginTop: 16, padding: '14px 16px', background: '#FBF5EE', borderRadius: 12, border: '1px solid #EDE0CE', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
+          <p style={{ color: '#7A5C3A', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+            {dados.status === 'iniciando' ? 'Ainda vai começar? Selecione hoje. Você poderá ajustar depois.' : 'Insira a data da sua primeira dose para calcular as próximas aplicações.'}
+          </p>
+        </div>
+      </div>
+      <OBFooter onPress={next} disabled={!dados.dataInicio} />
+    </Wrap>
+  );
+
+  /* ── Step 6: Sexo ── */
+  if (step === 6) return (
+    <Wrap>
+      <OBHeader title="Qual é o seu sexo biológico?" subtitle="Ajuda a personalizar metas e informações de saúde" />
+      <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+        {[{ id: 'feminino', label: 'Feminino', icon: '♀️' }, { id: 'masculino', label: 'Masculino', icon: '♂️' }, { id: 'outro', label: 'Prefiro não informar', icon: '🤝' }].map(s => (
+          <OptionRow key={s.id} selected={dados.sexo === s.id} onClick={() => set('sexo', s.id)} icon={s.icon} label={s.label} />
+        ))}
+      </div>
+      <OBFooter onPress={next} disabled={!dados.sexo} />
+    </Wrap>
+  );
+
+  /* ── Step 7: Peso início ── */
+  if (step === 7) return (
+    <Wrap>
+      <OBHeader title="Qual era seu peso no início do tratamento?" subtitle="Vamos calcular quanto você já perdeu" />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <NumberStepper value={dados.pesoInicio} onChange={v => set('pesoInicio', v)} min={40} max={300} step={0.5} unit="kg" />
+      </div>
+      <OBFooter onPress={next} />
+    </Wrap>
+  );
+
+  /* ── Step 8: Peso atual ── */
+  if (step === 8) return (
+    <Wrap>
+      <OBHeader title="Qual é o seu peso atual?" subtitle="Você pode atualizar sempre na aba Peso" />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <NumberStepper value={dados.pesoAtual} onChange={v => set('pesoAtual', Math.min(v, dados.pesoInicio))} min={40} max={dados.pesoInicio} step={0.5} unit="kg" />
+      </div>
+      <OBFooter onPress={next} />
+    </Wrap>
+  );
+
+  /* ── Step 9: Meta de peso ── */
+  if (step === 9) return (
+    <Wrap>
+      <OBHeader title="Qual é a sua meta de peso?" subtitle="Seu objetivo personaliza suas projeções" />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+        <NumberStepper value={dados.meta} onChange={v => set('meta', Math.min(v, Math.max(40, dados.pesoAtual - 0.5)))} min={40} max={Math.max(41, dados.pesoAtual - 0.5)} step={0.5} unit="kg" />
+        {dados.pesoAtual > dados.meta && (
+          <div style={{ background: '#F5F0EC', borderRadius: 14, padding: '12px 32px', textAlign: 'center' }}>
+            <div style={{ color: 'var(--copper)', fontWeight: 800, fontSize: 24 }}>−{(dados.pesoAtual - dados.meta).toFixed(1)} kg</div>
+            <div style={{ color: '#9A8070', fontSize: 12, marginTop: 2 }}>meta de perda de peso</div>
+          </div>
+        )}
+      </div>
+      <OBFooter onPress={next} />
+    </Wrap>
+  );
+
+  /* ── Step 10: Objetivos ── */
+  if (step === 10) return (
+    <Wrap>
+      <OBHeader title="Quais são seus objetivos?" subtitle="Selecione todos que se aplicam a você" />
+      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        {objetivos.map(o => {
+          const sel = dados.objetivos.includes(o.id);
+          return (
+            <button key={o.id} onClick={() => toggleObj(o.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${sel ? 'var(--copper)' : '#EDE6DC'}`, background: sel ? 'rgba(196,136,90,0.06)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%' }}>
+              <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{o.icon}</span>
+              <span style={{ flex: 1, fontWeight: 600, color: sel ? 'var(--copper)' : '#1A1008', fontSize: 15 }}>{o.label}</span>
+              <CheckSquare on={sel} />
+            </button>
+          );
+        })}
+      </div>
+      <OBFooter onPress={next} disabled={dados.objetivos.length === 0} label="Ver meu plano →" />
+    </Wrap>
+  );
+
+  /* ── Step 11: Plano Personalizado ── */
+  if (step === 11) {
+    const perda = Math.max(0, dados.pesoAtual - dados.meta).toFixed(1);
+    const medLabel = medicamentos.find(m => m.id === dados.medicamento)?.label || dados.medicamento;
+    return (
+      <Wrap>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ padding: '52px 24px 24px', textAlign: 'center', borderBottom: '1px solid #F0E8DE', background: 'white' }}>
+            <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'linear-gradient(135deg, var(--copper-pale), rgba(196,136,90,0.15))', border: '3px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>🎯</div>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--brown)', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Seu Plano Personalizado</h2>
+            <p style={{ color: '#9A8070', fontSize: 14, margin: 0 }}>Tudo pronto, {dados.nome || 'você'}! Aqui está seu resumo:</p>
+          </div>
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10, background: '#FBF7F3' }}>
+            {[
+              { label: 'Medicamento', valor: medLabel, icon: '💊' },
+              { label: 'Dose atual', valor: dados.dose, icon: '📏' },
+              { label: 'Peso no início', valor: `${dados.pesoInicio} kg`, icon: '⚖️' },
+              { label: 'Peso atual', valor: `${dados.pesoAtual} kg`, icon: '📍' },
+              { label: 'Meta de peso', valor: `${dados.meta} kg`, icon: '🎯' },
+              { label: 'Perda esperada', valor: `−${perda} kg`, icon: '📉' },
+            ].map(item => (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'white', borderRadius: 12, border: '1px solid #F0E8DE', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ flex: 1, color: '#9A8070', fontSize: 14 }}>{item.label}</span>
+                <span style={{ color: 'var(--brown)', fontWeight: 700, fontSize: 15 }}>{item.valor}</span>
+              </div>
             ))}
           </div>
         </div>
-        <div>
-          <label style={labelStyle}>Data da primeira aplicação</label>
-          <input type="date" value={dados.dataInicio}
-            onChange={e => set('dataInicio', e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            style={inputStyle} />
-          <p style={{ color: '#9A8070', fontSize: 12, margin: '8px 0 0', lineHeight: 1.5 }}>
-            💡 Usamos essa data para calcular a janela semanal de aplicações
-          </p>
+        <div style={{ padding: '16px 24px 40px', background: 'white', borderTop: '1px solid #F0E8DE', flexShrink: 0 }}>
+          <button className="btn-primary" onClick={salvar}>Começar minha jornada 🌿</button>
         </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 'auto', paddingTop: 8 }}>
-          <button onClick={() => setStep(1)} style={{ flex: 1, padding: 14, borderRadius: 12, border: '2px solid #E8DDD4', background: 'white', color: 'var(--brown)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>← Voltar</button>
-          <button className="btn-primary" style={{ flex: 2 }} onClick={salvar}>
-            Começar jornada 🚀
-          </button>
-        </div>
-      </div>
-    </div>,
-  ];
+      </Wrap>
+    );
+  }
 
-  return (
-    <div style={{ position: 'absolute', inset: 0, background: 'var(--cream-light)', overflow: 'hidden' }}>
-      {steps[step]}
-    </div>
-  );
+  return null;
 }
 
 /* ─── NAVEGAÇÃO ──────────────────────────────────────────── */
