@@ -1341,7 +1341,12 @@ function OnboardingScreen({ onComplete }) {
   const pct = step === 0 ? 0 : Math.min(100, Math.round((step / TOTAL) * 100));
 
   const medicamentos = [
-    { id: 'tirzepatida-generica', label: 'Tirzepatida Genérica', sub: 'Composto manipulado' },
+    { id: 'tg', label: 'T.G (Tirzepatida Genérica)', sub: 'Composto manipulado' },
+    { id: 'lipoless', label: 'Lipoless®', sub: 'Tirzepatida manipulada' },
+    { id: 'tirzec', label: 'Tirzec®', sub: 'Tirzepatida manipulada' },
+    { id: 'lipoland', label: 'Lipoland®', sub: 'Tirzepatida manipulada' },
+    { id: 'gluconex', label: 'Gluconex®', sub: 'Tirzepatida manipulada' },
+    { id: 'tirzepatida-generica', label: 'Tirzepatida Genérica', sub: 'Outros compostos manipulados' },
     { id: 'mounjaro', label: 'Mounjaro®', sub: 'Tirzepatida – Eli Lilly' },
     { id: 'zepbound', label: 'Zepbound®', sub: 'Tirzepatida – Eli Lilly' },
     { id: 'semaglutida-generica', label: 'Semaglutida Genérica', sub: 'Composto manipulado' },
