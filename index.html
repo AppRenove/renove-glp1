@@ -102,6 +102,25 @@ function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }) {
     zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
     'arrow-left': <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
     'x': <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    /* ── Onboarding icons ── */
+    'med-bottle': <><rect x="9" y="1" width="6" height="4" rx="1.5"/><rect x="5" y="5" width="14" height="18" rx="3"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></>,
+    'hourglass': <><path d="M5 22h14M5 2h14"/><path d="M17 2v5l-5 5 5 5v5"/><path d="M7 2v5l5 5-5 5v5"/></>,
+    'play-btn': <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></>,
+    'syringe-dot': <><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/><circle cx="4.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/></>,
+    'user-plus': <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></>,
+    'female': <><circle cx="12" cy="8" r="5"/><line x1="12" y1="13" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></>,
+    'male': <><circle cx="10" cy="14" r="5"/><line x1="19" y1="5" x2="14.14" y2="9.86"/><polyline points="15 5 19 5 19 9"/></>,
+    'hand-heart': <><path d="M11 14H9a2 2 0 0 1 0-4h3.5"/><path d="M13 6v4M15 4v2"/><path d="m18 2 3 3-8 8H9l-1 4H5l2-7 8-8z"/></>,
+    'walk': <><circle cx="12" cy="4" r="2"/><path d="m14 12-2 2-1 5-3-3 2-2"/><path d="m9 10 2-3 3 2 2-2"/></>,
+    'run': <><circle cx="13" cy="4" r="2"/><path d="M6 20l4-6"/><path d="m9 11 4 2 5-4"/><path d="m14 13-1 7"/></>,
+    'couch': <><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0Z"/><path d="M4 18v2"/><path d="M20 18v2"/><path d="M12 4v9"/></>,
+    'heart': <><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></>,
+    'star': <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
+    'moon': <><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></>,
+    'smile': <><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></>,
+    'target-goal': <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+    'stethoscope': <><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></>,
+    'shirt': <><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -1322,28 +1341,28 @@ function OnboardingScreen({ onComplete }) {
   const pct = step === 0 ? 0 : Math.min(100, Math.round((step / TOTAL) * 100));
 
   const medicamentos = [
-    { id: 'tirzepatida-generica', label: 'Tirzepatida Genérica', sub: 'Composto manipulado', icon: '💊' },
-    { id: 'mounjaro', label: 'Mounjaro®', sub: 'Tirzepatida – Eli Lilly', icon: '💊' },
-    { id: 'zepbound', label: 'Zepbound®', sub: 'Tirzepatida – Eli Lilly', icon: '💊' },
-    { id: 'semaglutida-generica', label: 'Semaglutida Genérica', sub: 'Composto manipulado', icon: '💊' },
-    { id: 'ozempic', label: 'Ozempic®', sub: 'Semaglutida – Novo Nordisk', icon: '💊' },
-    { id: 'wegovy', label: 'Wegovy®', sub: 'Semaglutida – Novo Nordisk', icon: '💊' },
-    { id: 'rybelsus', label: 'Rybelsus®', sub: 'Semaglutida oral – Novo Nordisk', icon: '💊' },
-    { id: 'saxenda', label: 'Saxenda®', sub: 'Liraglutida – Novo Nordisk', icon: '💊' },
-    { id: 'trulicity', label: 'Trulicity®', sub: 'Dulaglutida – Eli Lilly', icon: '💊' },
-    { id: 'retatrutida', label: 'Retatrutida', sub: 'Em desenvolvimento clínico', icon: '🧪' },
-    { id: 'outro', label: 'Outro GLP-1', sub: 'Não listado acima', icon: '🧪' },
-    { id: 'nao-sei', label: 'Ainda não decidi', sub: 'Vou escolher com meu médico', icon: '❓' },
+    { id: 'tirzepatida-generica', label: 'Tirzepatida Genérica', sub: 'Composto manipulado' },
+    { id: 'mounjaro', label: 'Mounjaro®', sub: 'Tirzepatida – Eli Lilly' },
+    { id: 'zepbound', label: 'Zepbound®', sub: 'Tirzepatida – Eli Lilly' },
+    { id: 'semaglutida-generica', label: 'Semaglutida Genérica', sub: 'Composto manipulado' },
+    { id: 'ozempic', label: 'Ozempic®', sub: 'Semaglutida – Novo Nordisk' },
+    { id: 'wegovy', label: 'Wegovy®', sub: 'Semaglutida – Novo Nordisk' },
+    { id: 'rybelsus', label: 'Rybelsus®', sub: 'Semaglutida oral – Novo Nordisk' },
+    { id: 'saxenda', label: 'Saxenda®', sub: 'Liraglutida – Novo Nordisk' },
+    { id: 'trulicity', label: 'Trulicity®', sub: 'Dulaglutida – Eli Lilly' },
+    { id: 'retatrutida', label: 'Retatrutida', sub: 'Em desenvolvimento clínico' },
+    { id: 'outro', label: 'Outro GLP-1', sub: 'Não listado acima' },
+    { id: 'nao-sei', label: 'Ainda não decidi', sub: 'Vou escolher com meu médico' },
   ];
   const doses = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Dose personalizada', 'Ainda não sei minha dose'];
   const objetivos = [
-    { id: 'saude', label: 'Melhorar minha saúde geral', icon: '❤️' },
-    { id: 'disposicao', label: 'Ter mais disposição e energia', icon: '⚡' },
-    { id: 'roupas', label: 'Vestir roupas menores', icon: '👗' },
-    { id: 'autoestima', label: 'Aumentar minha autoestima', icon: '✨' },
-    { id: 'diabetes', label: 'Controlar diabetes/glicemia', icon: '🩺' },
-    { id: 'social', label: 'Vida social mais ativa', icon: '🎉' },
-    { id: 'sono', label: 'Melhorar qualidade do sono', icon: '😴' },
+    { id: 'saude', label: 'Melhorar minha saúde geral', iconName: 'heart' },
+    { id: 'disposicao', label: 'Ter mais disposição e energia', iconName: 'zap' },
+    { id: 'roupas', label: 'Vestir roupas menores', iconName: 'shirt' },
+    { id: 'autoestima', label: 'Aumentar minha autoestima', iconName: 'star' },
+    { id: 'diabetes', label: 'Controlar diabetes/glicemia', iconName: 'stethoscope' },
+    { id: 'social', label: 'Vida social mais ativa', iconName: 'smile' },
+    { id: 'sono', label: 'Melhorar qualidade do sono', iconName: 'moon' },
   ];
 
   const CheckCircle = ({ on }) => (
@@ -1368,12 +1387,18 @@ function OnboardingScreen({ onComplete }) {
       {subtitle && <p style={{ fontSize: 14, color: 'var(--brown-light)', margin: 0, lineHeight: 1.5, opacity: 0.7 }}>{subtitle}</p>}
     </div>
   );
-  const OptionRow = ({ selected, onClick, icon, label, sublabel }) => (
-    <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderRadius: 14, border: `2px solid ${selected ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: selected ? 'rgba(196,136,90,0.1)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', boxShadow: selected ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
-      {icon && <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{icon}</span>}
+  const OptionRow = ({ selected, onClick, icon, iconName, label, sublabel }) => (
+    <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${selected ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: selected ? 'rgba(196,136,90,0.08)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', boxShadow: selected ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
+      {iconName ? (
+        <div style={{ width: 40, height: 40, borderRadius: 11, background: selected ? 'rgba(196,136,90,0.15)' : '#F5F0EC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}>
+          <Icon name={iconName} size={20} color={selected ? 'var(--copper)' : '#9A8070'} strokeWidth={1.8} />
+        </div>
+      ) : icon ? (
+        <span style={{ fontSize: 22, flexShrink: 0, width: 36, textAlign: 'center' }}>{icon}</span>
+      ) : null}
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: selected ? 'var(--brown)' : 'var(--brown)', fontSize: 15, lineHeight: 1.3 }}>{label}</div>
-        {sublabel && <div style={{ fontSize: 12, color: 'var(--brown-light)', marginTop: 2, opacity: 0.65 }}>{sublabel}</div>}
+        <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 15, lineHeight: 1.3 }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>{sublabel}</div>}
       </div>
       <CheckCircle on={selected} />
     </button>
@@ -1399,9 +1424,11 @@ function OnboardingScreen({ onComplete }) {
       {/* Cards de features — fundo cream */}
       <div style={{ background: 'var(--cream-light)', padding: '24px 24px 0' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[{ icon: '💉', t: 'Lembretes de aplicação semanais' }, { icon: '⚖️', t: 'Histórico de peso e metas' }, { icon: '🤖', t: 'Assistente Rê sempre disponível' }].map(f => (
+          {[{ iconName: 'syringe', t: 'Lembretes de aplicação semanais' }, { iconName: 'scale', t: 'Histórico de peso e metas' }, { iconName: 'message-circle', t: 'Assistente Rê sempre disponível' }].map(f => (
             <div key={f.t} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'white', borderRadius: 12, border: '1px solid rgba(196,136,90,0.15)', boxShadow: '0 1px 6px rgba(45,31,20,0.05)', textAlign: 'left' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{f.icon}</div>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={f.iconName} size={20} color="var(--copper)" strokeWidth={1.8} />
+              </div>
               <span style={{ color: 'var(--brown)', fontSize: 13, fontWeight: 600 }}>{f.t}</span>
             </div>
           ))}
@@ -1418,8 +1445,8 @@ function OnboardingScreen({ onComplete }) {
     <Wrap>
       <OBHeader title="Pronto para começar sua jornada?" subtitle="Onde você está no tratamento GLP-1?" />
       <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
-        <OptionRow selected={dados.status === 'usando'} onClick={() => set('status', 'usando')} icon="💉" label="Já estou usando GLP-1" sublabel="Tenho histórico de aplicações" />
-        <OptionRow selected={dados.status === 'iniciando'} onClick={() => set('status', 'iniciando')} icon="🌱" label="Quero começar com GLP-1" sublabel="Ainda não iniciei o tratamento" />
+        <OptionRow selected={dados.status === 'usando'} onClick={() => set('status', 'usando')} iconName="syringe-dot" label="Já estou usando GLP-1" sublabel="Tenho histórico de aplicações" />
+        <OptionRow selected={dados.status === 'iniciando'} onClick={() => set('status', 'iniciando')} iconName="play-btn" label="Quero começar com GLP-1" sublabel="Ainda não iniciei o tratamento" />
       </div>
       <OBFooter onPress={next} disabled={!dados.status} />
     </Wrap>
@@ -1445,7 +1472,7 @@ function OnboardingScreen({ onComplete }) {
       <OBHeader title="Qual medicamento GLP-1 você usa?" subtitle="Se não estiver listado, escolha 'Outro'" />
       <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
         {medicamentos.map(m => (
-          <OptionRow key={m.id} selected={dados.medicamento === m.id} onClick={() => set('medicamento', m.id)} icon={m.icon} label={m.label} sublabel={m.sub} />
+          <OptionRow key={m.id} selected={dados.medicamento === m.id} onClick={() => set('medicamento', m.id)} iconName="med-bottle" label={m.label} sublabel={m.sub} />
         ))}
       </div>
       <OBFooter onPress={next} disabled={!dados.medicamento} />
@@ -1458,7 +1485,7 @@ function OnboardingScreen({ onComplete }) {
       <OBHeader title="Qual é a sua dosagem?" subtitle="Escolha a dose que você usa ou quer usar" />
       <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
         {doses.map(d => (
-          <OptionRow key={d} selected={dados.dose === d} onClick={() => set('dose', d)} label={d} />
+          <OptionRow key={d} selected={dados.dose === d} onClick={() => set('dose', d)} iconName="hourglass" label={d} />
         ))}
       </div>
       <OBFooter onPress={next} />
@@ -1489,8 +1516,8 @@ function OnboardingScreen({ onComplete }) {
     <Wrap>
       <OBHeader title="Qual é o seu sexo biológico?" subtitle="Ajuda a personalizar metas e informações de saúde" />
       <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
-        {[{ id: 'feminino', label: 'Feminino', icon: '♀️' }, { id: 'masculino', label: 'Masculino', icon: '♂️' }, { id: 'outro', label: 'Prefiro não informar', icon: '🤝' }].map(s => (
-          <OptionRow key={s.id} selected={dados.sexo === s.id} onClick={() => set('sexo', s.id)} icon={s.icon} label={s.label} />
+        {[{ id: 'feminino', label: 'Feminino', iconName: 'female' }, { id: 'masculino', label: 'Masculino', iconName: 'male' }, { id: 'outro', label: 'Prefiro não informar', iconName: 'hand-heart' }].map(s => (
+          <OptionRow key={s.id} selected={dados.sexo === s.id} onClick={() => set('sexo', s.id)} iconName={s.iconName} label={s.label} />
         ))}
       </div>
       <OBFooter onPress={next} disabled={!dados.sexo} />
@@ -1544,8 +1571,10 @@ function OnboardingScreen({ onComplete }) {
         {objetivos.map(o => {
           const sel = dados.objetivos.includes(o.id);
           return (
-            <button key={o.id} onClick={() => toggleObj(o.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${sel ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: sel ? 'rgba(196,136,90,0.1)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%', boxShadow: sel ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
-              <span style={{ fontSize: 22, flexShrink: 0, width: 28, textAlign: 'center' }}>{o.icon}</span>
+            <button key={o.id} onClick={() => toggleObj(o.id)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, border: `2px solid ${sel ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`, background: sel ? 'rgba(196,136,90,0.08)' : 'white', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%', boxShadow: sel ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: sel ? 'rgba(196,136,90,0.15)' : '#F5F0EC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}>
+                <Icon name={o.iconName} size={20} color={sel ? 'var(--copper)' : '#9A8070'} strokeWidth={1.8} />
+              </div>
               <span style={{ flex: 1, fontWeight: 600, color: 'var(--brown)', fontSize: 15 }}>{o.label}</span>
               <CheckSquare on={sel} />
             </button>
