@@ -2322,57 +2322,51 @@ function LabeledVialSVG({ mg, ml }) {
 
 /* ─── ANIMAÇÃO DA AMPOLA ─────────────────────────────────── */
 function VialAnimation({ mg, ml }) {
-  const [animState, setAnimState] = React.useState('enter');
-  // enter → flipOut → showLabel → flipIn → done → annotate
+  const [showAnnotate, setShowAnnotate] = React.useState(false);
 
   React.useEffect(() => {
-    const ts = [
-      setTimeout(() => setAnimState('flipOut'),   900),
-      setTimeout(() => setAnimState('showLabel'), 1530),
-      setTimeout(() => setAnimState('flipIn'),    1600),
-      setTimeout(() => setAnimState('done'),      2280),
-      setTimeout(() => setAnimState('annotate'),  2750),
-    ];
-    return () => ts.forEach(clearTimeout);
+    // Aguarda o vídeo aparecer, depois mostra as setas
+    const t = setTimeout(() => setShowAnnotate(true), 2800);
+    return () => clearTimeout(t);
   }, []);
 
-  const showLabel    = ['showLabel','flipIn','done','annotate'].includes(animState);
-  const showAnnotate = animState === 'annotate';
-
-  const wrapAnim =
-    animState === 'enter'     ? 'vialSlideIn 0.65s cubic-bezier(0.34,1.56,0.64,1) both' :
-    animState === 'flipOut'   ? 'vialFlipOut 0.62s cubic-bezier(0.55,0,0.45,1) both' :
-    animState === 'flipIn'    ? 'vialFlipIn  0.68s cubic-bezier(0.34,1.56,0.64,1) both' :
-    animState === 'done' || animState === 'annotate' ? 'vialGlow 3.5s ease-in-out infinite' : '';
-
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:8 }}>
-      {/* Vial */}
-      <div style={{ position:'relative', width:180, height:200, display:'flex', justifyContent:'center', alignItems:'center' }}>
-        <div style={{ animation: wrapAnim }}>
-          {showLabel
-            ? <LabeledVialSVG mg={mg} ml={ml} />
-            : <BlankVialSVG />
-          }
-        </div>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:4 }}>
+      {/* Vídeo da ampola real */}
+      <div style={{
+        position:'relative',
+        width:160, height:240,
+        display:'flex', justifyContent:'center', alignItems:'center',
+        animation:'vialSlideIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both',
+      }}>
+        <video
+          src="ampola.mp4"
+          autoPlay muted loop playsInline
+          style={{
+            width:160, height:240,
+            objectFit:'cover',
+            borderRadius:18,
+            boxShadow:'0 8px 32px rgba(45,31,20,0.22), 0 2px 8px rgba(196,136,90,0.18)',
+          }}
+        />
 
-        {/* Annotation arrows — aparecem depois do flip */}
+        {/* Annotation arrows */}
         {showAnnotate && (
           <div style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none' }}>
-            {/* mg arrow */}
-            <div style={{ position:'absolute', top:90, right:4, display:'flex', alignItems:'center', gap:6,
-              animation:'calloutSlide 0.4s 0s ease both' }}>
+            {/* mg */}
+            <div style={{ position:'absolute', top:'42%', right:-2, display:'flex', alignItems:'center', gap:5,
+              animation:'calloutSlide 0.45s 0s ease both' }}>
               <div style={{ background:'#E65100', color:'white', fontSize:11, fontWeight:800,
-                padding:'5px 10px', borderRadius:20, boxShadow:'0 2px 8px rgba(230,81,0,0.4)',
+                padding:'5px 10px', borderRadius:20, boxShadow:'0 2px 8px rgba(230,81,0,0.45)',
                 whiteSpace:'nowrap' }}>← mg</div>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#E65100',
                 animation:'dotBeat 1.4s ease-in-out infinite' }}/>
             </div>
-            {/* ml arrow */}
-            <div style={{ position:'absolute', top:123, right:4, display:'flex', alignItems:'center', gap:6,
-              animation:'calloutSlide 0.4s 0.22s ease both' }}>
+            {/* ml */}
+            <div style={{ position:'absolute', top:'56%', right:-2, display:'flex', alignItems:'center', gap:5,
+              animation:'calloutSlide 0.45s 0.2s ease both' }}>
               <div style={{ background:'#2E7D32', color:'white', fontSize:11, fontWeight:800,
-                padding:'5px 10px', borderRadius:20, boxShadow:'0 2px 8px rgba(46,125,50,0.4)',
+                padding:'5px 10px', borderRadius:20, boxShadow:'0 2px 8px rgba(46,125,50,0.45)',
                 whiteSpace:'nowrap' }}>← ml</div>
               <div style={{ width:8, height:8, borderRadius:'50%', background:'#2E7D32',
                 animation:'dotBeat 1.4s 0.3s ease-in-out infinite' }}/>
@@ -2382,7 +2376,7 @@ function VialAnimation({ mg, ml }) {
       </div>
 
       {/* Legenda */}
-      <div style={{ opacity: showAnnotate ? 1:0, transition:'opacity 0.5s 0.3s', textAlign:'center', marginTop:2 }}>
+      <div style={{ opacity: showAnnotate ? 1:0, transition:'opacity 0.5s', textAlign:'center', marginTop:6 }}>
         <div style={{ fontSize:12, color:'var(--brown-light)', fontWeight:500 }}>
           Verifique no <strong style={{color:'var(--brown)'}}>rótulo da sua ampola</strong>
         </div>
