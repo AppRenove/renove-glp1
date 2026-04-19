@@ -145,6 +145,40 @@
     @keyframes bellRing { 0%,100%{transform:rotate(0)} 20%{transform:rotate(12deg)} 40%{transform:rotate(-12deg)} 60%{transform:rotate(6deg)} 80%{transform:rotate(-4deg)} }
     .bell-ring { animation: bellRing .6s ease; }
 
+    /* ── Vial 3D Animation ── */
+    @keyframes vialSlideIn {
+      from { opacity:0; transform: translateY(50px) scale(0.85); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+    @keyframes vialGlow {
+      0%,100% { filter: drop-shadow(0 0 6px rgba(196,136,90,0.3)); }
+      50%      { filter: drop-shadow(0 0 16px rgba(196,136,90,0.7)); }
+    }
+    @keyframes calloutPop {
+      0%   { opacity:0; transform: scale(0.4); }
+      70%  { opacity:1; transform: scale(1.12); }
+      100% { opacity:1; transform: scale(1); }
+    }
+    @keyframes calloutPulse {
+      0%,100% { opacity:1; r: 14; }
+      50%      { opacity:0.55; r: 17; }
+    }
+    @keyframes scanLine {
+      from { transform: translateY(0); opacity:0.7; }
+      to   { transform: translateY(130px); opacity:0; }
+    }
+    @keyframes arrowDraw {
+      from { stroke-dashoffset: 60; opacity:0; }
+      to   { stroke-dashoffset: 0; opacity:1; }
+    }
+    @keyframes labelFadeIn {
+      from { opacity:0; transform: translateX(10px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .vial-scene { perspective: 900px; }
+    .vial-card  { transform-style: preserve-3d; }
+    .vial-face  { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
     /* ── Rê FAB ── */
     .re-fab {
       position: absolute;
@@ -1736,6 +1770,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
     medicamento: perfil?.medicamento || '',
     concentracaoAmpola: perfil?.concentracaoAmpola || '',
     totalAmpola: perfil?.totalAmpola || '',
+    volumeMl: perfil?.volumeMl || '',
     dose:       perfil?.dose       || '',
     dataInicio: perfil?.dataInicio || '',
     pesoAtual:  String(perfil?.pesoAtual  || ''),
@@ -1831,57 +1866,48 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
           </div>
 
           <div>
-            <label style={labelStyle}>Concentração da ampola</label>
-            <p style={{ fontSize: 12, color: '#9A8070', margin: '0 0 10px', lineHeight: 1.4 }}>Para frascos manipulados — verifique no rótulo ou receita</p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {((['semaglutida-generica', 'Semaglutida Genérica'].includes(form.medicamento))
-                ? ['0,5mg/ml', '1mg/ml', '2mg/ml', '3mg/ml', '5mg/ml']
-                : ['5mg/ml', '10mg/ml', '15mg/ml', '20mg/ml', '25mg/ml', '30mg/ml']
-              ).map(c => (
-                <button key={c} onClick={() => upd('concentracaoAmpola', c)}
-                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                    background: form.concentracaoAmpola === c ? 'var(--copper)' : '#F5F0EC',
-                    color: form.concentracaoAmpola === c ? 'white' : 'var(--brown-light)', border: 'none' }}>
-                  {c}
-                </button>
-              ))}
-              <button onClick={() => upd('concentracaoAmpola', 'nao-sei')}
-                style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  background: form.concentracaoAmpola === 'nao-sei' ? '#9A8070' : '#F5F0EC',
-                  color: form.concentracaoAmpola === 'nao-sei' ? 'white' : 'var(--brown-light)', border: 'none' }}>
-                Não sei
-              </button>
-              <button onClick={() => upd('concentracaoAmpola', '')}
-                style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  background: !form.concentracaoAmpola ? '#E0D8D0' : '#F5F0EC',
-                  color: 'var(--brown-light)', border: 'none' }}>
-                Caneta pré-preenchida
-              </button>
+            <label style={labelStyle}>Dados da ampola</label>
+            <p style={{ fontSize: 12, color: '#9A8070', margin: '0 0 10px', lineHeight: 1.4 }}>Verifique no rótulo do frasco e insira os valores exatos</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#E65100', marginBottom: 5, textTransform: 'uppercase' }}>🟠 Total (mg)</div>
+                <div style={{ position: 'relative' }}>
+                  <input type="number" inputMode="decimal" placeholder="15" value={form.totalAmpola}
+                    onChange={e => { upd('totalAmpola', e.target.value); const mg=parseFloat(e.target.value), ml=parseFloat(form.volumeMl)||1; if(!isNaN(mg)&&mg>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
+                    style={{ ...fieldStyle, textAlign: 'center', fontSize: 17, fontWeight: 700, paddingRight: 34, borderColor: form.totalAmpola ? '#E65100' : undefined }} />
+                  <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, fontWeight:700, color:'#E65100', opacity:.8 }}>mg</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#2E7D32', marginBottom: 5, textTransform: 'uppercase' }}>🟢 Volume (ml)</div>
+                <div style={{ position: 'relative' }}>
+                  <input type="number" inputMode="decimal" placeholder="2" value={form.volumeMl || ''}
+                    onChange={e => { upd('volumeMl', e.target.value); const mg=parseFloat(form.totalAmpola), ml=parseFloat(e.target.value); if(!isNaN(mg)&&!isNaN(ml)&&ml>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
+                    style={{ ...fieldStyle, textAlign: 'center', fontSize: 17, fontWeight: 700, paddingRight: 32, borderColor: form.volumeMl ? '#43A047' : undefined }} />
+                  <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, fontWeight:700, color:'#43A047', opacity:.8 }}>ml</span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <label style={labelStyle}>Total da ampola (mg)</label>
-            <p style={{ fontSize: 12, color: '#9A8070', margin: '0 0 10px', lineHeight: 1.4 }}>Conteúdo total do frasco — não é a dose semanal. Ex: 15mg fracionado em 2,5mg = 6 aplicações</p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-              {['5','7,5','10','15','20','25','30','45','60'].map(t => (
-                <button key={t} onClick={() => upd('totalAmpola', t)}
-                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
-                    background: form.totalAmpola === t ? 'var(--copper)' : '#F5F0EC',
-                    color: form.totalAmpola === t ? 'white' : 'var(--brown-light)' }}>
-                  {t}mg
-                </button>
-              ))}
-            </div>
+            {/* Concentração calculada */}
+            {form.concentracaoAmpola && form.concentracaoAmpola !== 'caneta' && form.concentracaoAmpola !== 'nao-sei' && (
+              <div style={{ marginTop: 10, background: 'rgba(196,136,90,0.1)', borderRadius: 11, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(196,136,90,0.3)' }}>
+                <span style={{ fontSize: 12, color: 'var(--brown-light)' }}>Concentração calculada</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--copper)' }}>{form.concentracaoAmpola}</span>
+              </div>
+            )}
             {/* Preview doses */}
             {form.totalAmpola && form.dose && !isNaN(parseFloat(form.totalAmpola)) && !isNaN(parseFloat(form.dose)) && parseFloat(form.dose) > 0 && (
-              <div style={{ background: '#E8F8EE', border: '1px solid rgba(46,125,82,0.25)', borderRadius: 11, padding: '10px 13px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ marginTop: 8, background: '#E8F8EE', border: '1px solid rgba(46,125,82,0.25)', borderRadius: 11, padding: '10px 13px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>🧮</span>
                 <span style={{ fontSize: 13, color: '#2E7D52', fontWeight: 600 }}>
                   {Math.floor(parseFloat(form.totalAmpola) / parseFloat(form.dose))} doses de {form.dose} por ampola
                 </span>
               </div>
             )}
+            <button onClick={() => { upd('totalAmpola',''); upd('volumeMl',''); upd('concentracaoAmpola','caneta'); }}
+              style={{ marginTop: 10, fontSize: 12, color: '#9A8070', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 500 }}>
+              Uso caneta pré-preenchida (sem frasco)
+            </button>
           </div>
         </div>
 
@@ -2144,11 +2170,209 @@ function NumberStepper({ value, onChange, min = 40, max = 300, step = 0.5, unit 
   );
 }
 
+/* ─── ANIMAÇÃO 3D AMPOLA ─────────────────────────────────── */
+function VialAnimation({ mgValue, mlValue }) {
+  const [phase, setPhase] = React.useState(0);
+  // phase 0: entrando | 1: girando | 2: rótulo visível | 3: setas aparecem
+  React.useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 700);
+    const t2 = setTimeout(() => setPhase(2), 1900);
+    const t3 = setTimeout(() => setPhase(3), 2600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const mg = mgValue || '15';
+  const ml = mlValue || '2';
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0, paddingTop:8 }}>
+      {/* Cena 3D */}
+      <div className="vial-scene" style={{ width:160, height:220, position:'relative' }}>
+        <div className="vial-card" style={{
+          position:'relative', width:'100%', height:'100%',
+          transition: phase >= 1 ? 'transform 1.1s cubic-bezier(0.45,0.05,0.55,0.95)' : 'none',
+          transform: phase >= 1 ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          animation: 'vialSlideIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both',
+        }}>
+
+          {/* ── FACE TRASEIRA: ampola sem rótulo ── */}
+          <div className="vial-face" style={{ position:'absolute', inset:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
+            <svg width="100" height="210" viewBox="0 0 100 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="glassBack" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#A8C8E8" stopOpacity="0.25"/>
+                  <stop offset="35%" stopColor="#D8EDF8" stopOpacity="0.45"/>
+                  <stop offset="60%" stopColor="#F0F8FF" stopOpacity="0.55"/>
+                  <stop offset="100%" stopColor="#A8C8E8" stopOpacity="0.2"/>
+                </linearGradient>
+                <linearGradient id="capBackG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#B8B8B8"/>
+                  <stop offset="100%" stopColor="#787878"/>
+                </linearGradient>
+                <linearGradient id="stopperBack" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#444"/>
+                  <stop offset="100%" stopColor="#1A1A1A"/>
+                </linearGradient>
+              </defs>
+              {/* Cap */}
+              <rect x="27" y="4" width="46" height="18" rx="5" fill="url(#capBackG)"/>
+              <rect x="31" y="6" width="38" height="9" rx="3" fill="#D0D0D0" opacity="0.5"/>
+              {/* Crimp ring */}
+              <rect x="23" y="18" width="54" height="7" rx="1" fill="#909090"/>
+              {/* Stopper */}
+              <rect x="25" y="23" width="50" height="25" rx="7" fill="url(#stopperBack)"/>
+              <rect x="31" y="27" width="38" height="15" rx="4" fill="#111" opacity="0.7"/>
+              <ellipse cx="50" cy="28" rx="14" ry="4" fill="#555" opacity="0.4"/>
+              {/* Glass body */}
+              <path d="M24 46 L24 175 Q24 190 50 190 Q76 190 76 175 L76 46 Q76 42 72 40 L28 40 Q24 42 24 46 Z"
+                fill="url(#glassBack)" stroke="#90C0E0" strokeWidth="1.2" strokeOpacity="0.6"/>
+              {/* Glass highlight left */}
+              <path d="M30 50 L30 175" stroke="white" strokeWidth="2.5" strokeOpacity="0.4" strokeLinecap="round"/>
+              {/* Glass highlight right */}
+              <path d="M68 52 L68 172" stroke="white" strokeWidth="1.5" strokeOpacity="0.2" strokeLinecap="round"/>
+              {/* Bottom reflection */}
+              <ellipse cx="50" cy="183" rx="18" ry="5" fill="white" opacity="0.15"/>
+              {/* Scan line animada */}
+              <rect x="24" y="46" width="52" height="2" fill="rgba(196,136,90,0.4)" style={{ animation:'scanLine 1.8s linear infinite' }}/>
+              {/* Texto "VERSO" pequenino */}
+              <text x="50" y="115" textAnchor="middle" fontSize="8" fill="rgba(150,190,220,0.5)" fontFamily="Inter,sans-serif">VERSO</text>
+            </svg>
+          </div>
+
+          {/* ── FACE FRONTAL: ampola com rótulo ── */}
+          <div className="vial-face" style={{ position:'absolute', inset:0, display:'flex', justifyContent:'center', alignItems:'center', transform:'rotateY(180deg)' }}>
+            <svg width="100" height="210" viewBox="0 0 100 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+              style={{ animation: phase>=2 ? 'vialGlow 3s ease-in-out infinite' : 'none' }}>
+              <defs>
+                <linearGradient id="glassFront" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#A8C8E8" stopOpacity="0.3"/>
+                  <stop offset="30%" stopColor="#D8EDF8" stopOpacity="0.5"/>
+                  <stop offset="65%" stopColor="#F0F8FF" stopOpacity="0.6"/>
+                  <stop offset="100%" stopColor="#A8C8E8" stopOpacity="0.25"/>
+                </linearGradient>
+                <linearGradient id="capFrontG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#C8C8C8"/>
+                  <stop offset="100%" stopColor="#888"/>
+                </linearGradient>
+                <linearGradient id="labelG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#FDFAF7"/>
+                  <stop offset="100%" stopColor="#F5EDE3"/>
+                </linearGradient>
+                <linearGradient id="mgHighlight" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#FFF3E0"/>
+                  <stop offset="100%" stopColor="#FFE0B2"/>
+                </linearGradient>
+                <linearGradient id="mlHighlight" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#E8F5E9"/>
+                  <stop offset="100%" stopColor="#C8E6C9"/>
+                </linearGradient>
+                <filter id="labelShadow">
+                  <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#2D1F14" floodOpacity="0.15"/>
+                </filter>
+              </defs>
+              {/* Cap */}
+              <rect x="27" y="4" width="46" height="18" rx="5" fill="url(#capFrontG)"/>
+              <rect x="31" y="6" width="38" height="9" rx="3" fill="#E0E0E0" opacity="0.5"/>
+              <rect x="27" y="18" width="46" height="4" rx="1" fill="#C98B5E" opacity="0.7"/>
+              {/* Crimp ring */}
+              <rect x="23" y="20" width="54" height="6" rx="1" fill="#A06030"/>
+              {/* Stopper */}
+              <rect x="25" y="24" width="50" height="25" rx="7" fill="#2D2D2D"/>
+              <rect x="31" y="28" width="38" height="15" rx="4" fill="#111" opacity="0.8"/>
+              <ellipse cx="50" cy="29" rx="14" ry="4" fill="#555" opacity="0.5"/>
+              {/* Glass body */}
+              <path d="M24 47 L24 175 Q24 190 50 190 Q76 190 76 175 L76 47 Q76 43 72 41 L28 41 Q24 43 24 47 Z"
+                fill="url(#glassFront)" stroke="#90C0E0" strokeWidth="1.2" strokeOpacity="0.5"/>
+              {/* Label */}
+              <rect x="23" y="68" width="54" height="80" rx="3" fill="url(#labelG)" filter="url(#labelShadow)"/>
+              {/* Label topo colorido */}
+              <rect x="23" y="68" width="54" height="10" rx="3" fill="#C98B5E"/>
+              <rect x="23" y="73" width="54" height="5" fill="#C98B5E"/>
+              {/* Texto header */}
+              <text x="50" y="76" textAnchor="middle" fontSize="5.5" fill="white" fontFamily="Inter,sans-serif" fontWeight="700">MANIPULADO</text>
+              {/* Nome genérico */}
+              <text x="50" y="89" textAnchor="middle" fontSize="6.5" fill="#5A3E28" fontFamily="Inter,sans-serif" fontWeight="700">TIRZEPATIDA</text>
+              {/* Divider */}
+              <line x1="28" y1="93" x2="72" y2="93" stroke="#E0D0C0" strokeWidth="0.8"/>
+              {/* Highlight mg */}
+              <rect x="27" y="96" width="46" height="19" rx="3" fill="url(#mgHighlight)" stroke="#F9A825" strokeWidth="1.2"/>
+              <text x="50" y="105" textAnchor="middle" fontSize="6" fill="#8A5E00" fontFamily="Inter,sans-serif" fontWeight="600">Conteúdo total</text>
+              <text x="50" y="112" textAnchor="middle" fontSize="11" fill="#E65100" fontFamily="Inter,sans-serif" fontWeight="800">{mg}mg</text>
+              {/* Highlight ml */}
+              <rect x="27" y="118" width="46" height="17" rx="3" fill="url(#mlHighlight)" stroke="#43A047" strokeWidth="1.2"/>
+              <text x="50" y="127" textAnchor="middle" fontSize="6" fill="#2E7D32" fontFamily="Inter,sans-serif" fontWeight="600">Volume</text>
+              <text x="50" y="133" textAnchor="middle" fontSize="11" fill="#1B5E20" fontFamily="Inter,sans-serif" fontWeight="800">{ml}ml</text>
+              {/* Label rodapé */}
+              <line x1="28" y1="138" x2="72" y2="138" stroke="#E0D0C0" strokeWidth="0.8"/>
+              <text x="50" y="145" textAnchor="middle" fontSize="5" fill="#9A8070" fontFamily="Inter,sans-serif">Uso subcutâneo semanal</text>
+              {/* Glass highlight */}
+              <path d="M30 50 L30 173" stroke="white" strokeWidth="2.5" strokeOpacity="0.5" strokeLinecap="round"/>
+              <path d="M68 52 L68 170" stroke="white" strokeWidth="1.5" strokeOpacity="0.2" strokeLinecap="round"/>
+              {/* Bottom reflection */}
+              <ellipse cx="50" cy="183" rx="18" ry="5" fill="white" opacity="0.2"/>
+            </svg>
+
+            {/* ── SETAS ANIMADAS após fase 3 ── */}
+            {phase >= 3 && (
+              <svg width="160" height="210" viewBox="0 0 160 210" fill="none"
+                style={{ position:'absolute', top:0, left:0, pointerEvents:'none' }}>
+                {/* Seta mg (direita) */}
+                <path d="M80 107 L108 107 L116 107" stroke="#E65100" strokeWidth="2"
+                  strokeDasharray="60" strokeLinecap="round"
+                  style={{ animation:'arrowDraw 0.5s 0s ease both' }}/>
+                <circle cx="116" cy="107" r="4" fill="#E65100" opacity="0.9"
+                  style={{ animation:'calloutPop 0.4s 0.5s cubic-bezier(0.34,1.56,0.64,1) both' }}/>
+                {/* Label mg */}
+                <rect x="120" y="97" width="36" height="20" rx="6" fill="#E65100"
+                  style={{ animation:'labelFadeIn 0.35s 0.6s ease both', opacity:0 }}/>
+                <text x="138" y="109" textAnchor="middle" fontSize="9" fill="white" fontWeight="700"
+                  fontFamily="Inter,sans-serif"
+                  style={{ animation:'labelFadeIn 0.35s 0.6s ease both', opacity:0 }}>mg</text>
+
+                {/* Seta ml (direita) */}
+                <path d="M80 127 L108 127 L116 127" stroke="#2E7D32" strokeWidth="2"
+                  strokeDasharray="60" strokeLinecap="round"
+                  style={{ animation:'arrowDraw 0.5s 0.2s ease both' }}/>
+                <circle cx="116" cy="127" r="4" fill="#2E7D32" opacity="0.9"
+                  style={{ animation:'calloutPop 0.4s 0.7s cubic-bezier(0.34,1.56,0.64,1) both' }}/>
+                {/* Label ml */}
+                <rect x="120" y="117" width="36" height="20" rx="6" fill="#2E7D32"
+                  style={{ animation:'labelFadeIn 0.35s 0.8s ease both', opacity:0 }}/>
+                <text x="138" y="129" textAnchor="middle" fontSize="9" fill="white" fontWeight="700"
+                  fontFamily="Inter,sans-serif"
+                  style={{ animation:'labelFadeIn 0.35s 0.8s ease both', opacity:0 }}>ml</text>
+
+                {/* Ring pulsante mg */}
+                <circle cx="50" cy="107" r="11" stroke="#E65100" strokeWidth="1.5" fill="none"
+                  opacity="0.6" style={{ animation:'calloutPulse 1.8s ease-in-out infinite' }}/>
+                {/* Ring pulsante ml */}
+                <circle cx="50" cy="127" r="11" stroke="#2E7D32" strokeWidth="1.5" fill="none"
+                  opacity="0.6" style={{ animation:'calloutPulse 1.8s 0.4s ease-in-out infinite' }}/>
+              </svg>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Instrução abaixo da ampola */}
+      <div style={{ textAlign:'center', opacity: phase>=3 ? 1:0, transition:'opacity 0.6s', marginTop:4 }}>
+        <div style={{ fontSize:12, color:'var(--brown-light)', lineHeight:1.5 }}>
+          Verifique esses dados no <strong style={{color:'var(--brown)'}}>rótulo da sua ampola</strong>
+        </div>
+        <div style={{ display:'flex', gap:12, justifyContent:'center', marginTop:6 }}>
+          <span style={{ fontSize:11, background:'#FFF3E0', color:'#E65100', padding:'3px 10px', borderRadius:20, fontWeight:700, border:'1px solid #F9A825' }}>⬛ mg = quantidade</span>
+          <span style={{ fontSize:11, background:'#E8F5E9', color:'#2E7D32', padding:'3px 10px', borderRadius:20, fontWeight:700, border:'1px solid #43A047' }}>⬛ ml = volume</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingScreen({ onComplete }) {
   const TOTAL = 12;
   const [step, setStep] = useState(0);
   const [dados, setDados] = useState({
-    status: '', nome: '', medicamento: '', concentracaoAmpola: '', totalAmpola: '', dose: '5mg',
+    status: '', nome: '', medicamento: '', concentracaoAmpola: '', totalAmpola: '', volumeMl: '', dose: '5mg',
     dataInicio: new Date().toISOString().split('T')[0],
     sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
   });
@@ -2165,6 +2389,15 @@ function OnboardingScreen({ onComplete }) {
   const next = () => {
     // Pula step 4 (concentração) se o med usa caneta pré-preenchida
     if (step === 3 && !usaAmpola) return setStep(5);
+    // Ao sair do step 4, calcula e armazena a concentração mg/ml
+    if (step === 4) {
+      const mg = parseFloat(dados.totalAmpola);
+      const ml = parseFloat(dados.volumeMl) || 1;
+      if (!isNaN(mg) && mg > 0) {
+        const conc = parseFloat((mg / ml).toFixed(2));
+        setDados(p => ({ ...p, concentracaoAmpola: `${conc}mg/ml` }));
+      }
+    }
     setStep(s => s + 1);
   };
   const back = () => {
@@ -2345,90 +2578,104 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 4: Concentração + Total da ampola ── */
+  /* ── Step 4: Ampola – animação 3D + inputs livres ── */
   if (step === 4) {
-    // Calcula preview de doses ao vivo se tiver total e dose selecionada
-    const totalNum = parseFloat(dados.totalAmpola);
+    const mgNum   = parseFloat(dados.totalAmpola);
+    const mlNum   = parseFloat(dados.volumeMl);
+    const concCalc = (!isNaN(mgNum) && !isNaN(mlNum) && mlNum > 0)
+      ? parseFloat((mgNum / mlNum).toFixed(2)) : null;
     const doseNum  = parseFloat(dados.dose);
-    const dosePreview = !isNaN(totalNum) && !isNaN(doseNum) && doseNum > 0
-      ? Math.floor(totalNum / doseNum) : null;
+    const dosesAmpola = (!isNaN(mgNum) && !isNaN(doseNum) && doseNum > 0)
+      ? Math.floor(mgNum / doseNum) : null;
+
+    const inputStyle = {
+      width:'100%', padding:'14px 16px', borderRadius:14, border:'2px solid rgba(45,31,20,0.12)',
+      fontSize:18, fontWeight:700, color:'var(--brown)', background:'white', boxSizing:'border-box',
+      fontFamily:'Inter,sans-serif', textAlign:'center', outline:'none', transition:'border-color .2s',
+    };
 
     return (
     <Wrap>
-      <OBHeader title="Sua ampola de medicamento" subtitle="Concentração e conteúdo total — verifique no frasco" />
-      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+      {/* Header minimalista sem botão back pesado */}
+      <div style={{ padding:'52px 24px 0', flexShrink:0 }}>
+        <div style={{ height:4, background:'rgba(45,31,20,0.1)', borderRadius:2, marginBottom:16, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${pct}%`, background:'linear-gradient(90deg,var(--copper),var(--copper-light))', borderRadius:2, transition:'width .4s ease' }}/>
+        </div>
+        <button onClick={back} style={{ width:36, height:36, borderRadius:'50%', background:'rgba(196,136,90,0.12)', border:'1.5px solid rgba(196,136,90,0.2)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', marginBottom:12 }}>
+          <Icon name="arrow-left" size={18} color="var(--brown-light)" strokeWidth={2.2}/>
+        </button>
+        <h2 style={{ fontSize:24, fontWeight:800, color:'var(--brown)', margin:'0 0 4px', letterSpacing:'-0.5px' }}>Sua ampola</h2>
+        <p style={{ fontSize:13, color:'var(--brown-light)', margin:0, opacity:.7 }}>Olhe no rótulo e insira os valores exatos</p>
+      </div>
 
-        {/* ── Seção 1: Concentração (mg/ml) ── */}
-        <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 2 }}>Concentração (mg/ml)</div>
-        <div style={{ background: 'rgba(196,136,90,0.08)', borderRadius: 12, padding: '10px 13px', border: '1px solid rgba(196,136,90,0.2)', display: 'flex', gap: 9, alignItems: 'flex-start', marginBottom: 2 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p style={{ color: 'var(--brown-light)', fontSize: 12, margin: 0, lineHeight: 1.45 }}>
-            Ex: <strong style={{ color: 'var(--brown)' }}>10mg/ml</strong> = cada ml tem 10mg. Está impresso no frasco ou na receita.
-          </p>
-        </div>
-        {concentracoesAtivas.map(c => (
-          <button key={c.val} onClick={() => set('concentracaoAmpola', c.val)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 13,
-              border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`,
-              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.08)' : 'white',
-              cursor: 'pointer', textAlign: 'left', transition: 'all .15s',
-              boxShadow: dados.concentracaoAmpola === c.val ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.15)' : '#F5F0EC' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dados.concentracaoAmpola === c.val ? 'var(--copper)' : '#9A8070'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="1" width="6" height="4" rx="1.5"/><rect x="5" y="5" width="14" height="18" rx="3"/>
-                <line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14.5 }}>{c.label}</div>
-              {c.val !== 'nao-sei' && <div style={{ fontSize: 11, color: '#9A8070', marginTop: 1, letterSpacing: '0.1px' }}>{c.sub}</div>}
-              {c.val === 'nao-sei' && <div style={{ fontSize: 11.5, color: '#9A8070', marginTop: 1 }}>Ajuste depois no Perfil</div>}
-            </div>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-              border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.18)'}`,
-              background: dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {dados.concentracaoAmpola === c.val && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-            </div>
-          </button>
-        ))}
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 24px 8px' }}>
+        {/* ── Animação 3D ── */}
+        <VialAnimation mgValue={dados.totalAmpola || '15'} mlValue={dados.volumeMl || '2'} />
 
-        {/* ── Seção 2: Total da ampola (mg) ── */}
-        <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginTop: 8, marginBottom: 2 }}>Total da ampola (mg)</div>
-        <div style={{ background: 'rgba(196,136,90,0.08)', borderRadius: 12, padding: '10px 13px', border: '1px solid rgba(196,136,90,0.2)', display: 'flex', gap: 9, alignItems: 'flex-start', marginBottom: 2 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p style={{ color: 'var(--brown-light)', fontSize: 12, margin: 0, lineHeight: 1.45 }}>
-            Conteúdo <strong style={{ color: 'var(--brown)' }}>total</strong> do frasco — não é sua dose semanal. Ex: ampola de <strong>15mg</strong> fracionada em doses de 2,5mg = 6 aplicações.
-          </p>
+        {/* ── Inputs ── */}
+        <div style={{ display:'flex', gap:12, marginTop:16 }}>
+          {/* Total mg */}
+          <div style={{ flex:1 }}>
+            <label style={{ display:'block', fontWeight:700, fontSize:12, color:'#E65100', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.5px' }}>
+              🟠 Total da ampola
+            </label>
+            <div style={{ position:'relative' }}>
+              <input type="number" inputMode="decimal" placeholder="15"
+                value={dados.totalAmpola}
+                onChange={e => set('totalAmpola', e.target.value)}
+                style={{ ...inputStyle, borderColor: dados.totalAmpola ? '#E65100' : 'rgba(45,31,20,0.12)', paddingRight:36 }}
+              />
+              <span style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', fontSize:14, fontWeight:700, color:'#E65100', opacity:.8 }}>mg</span>
+            </div>
+          </div>
+          {/* Volume ml */}
+          <div style={{ flex:1 }}>
+            <label style={{ display:'block', fontWeight:700, fontSize:12, color:'#2E7D32', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.5px' }}>
+              🟢 Volume total
+            </label>
+            <div style={{ position:'relative' }}>
+              <input type="number" inputMode="decimal" placeholder="2"
+                value={dados.volumeMl}
+                onChange={e => set('volumeMl', e.target.value)}
+                style={{ ...inputStyle, borderColor: dados.volumeMl ? '#43A047' : 'rgba(45,31,20,0.12)', paddingRight:32 }}
+              />
+              <span style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', fontSize:14, fontWeight:700, color:'#43A047', opacity:.8 }}>ml</span>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['5mg','7,5mg','10mg','15mg','20mg','25mg','30mg','45mg','60mg','Outro'].map(t => (
-            <button key={t} onClick={() => set('totalAmpola', t === 'Outro' ? '' : t.replace('mg',''))}
-              style={{ padding: '9px 15px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: dados.totalAmpola === t.replace('mg','') ? 'var(--copper)' : '#F5F0EC',
-                color: dados.totalAmpola === t.replace('mg','') ? 'white' : 'var(--brown-light)',
-                transition: 'all .15s' }}>
-              {t}
-            </button>
-          ))}
-        </div>
-        {/* Preview de doses se possível */}
-        {dosePreview && (
-          <div style={{ background: 'linear-gradient(135deg, #E8F8EE, #F0F9F4)', border: '1.5px solid rgba(46,125,82,0.3)', borderRadius: 13, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 22 }}>🧮</span>
+
+        {/* ── Resultado calculado ── */}
+        {concCalc && (
+          <div style={{ marginTop:12, background:'linear-gradient(135deg,rgba(196,136,90,0.1),rgba(196,136,90,0.05))', border:'1.5px solid rgba(196,136,90,0.35)', borderRadius:14, padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', animation:'slideUp .3s ease both' }}>
             <div>
-              <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 14 }}>
-                {dosePreview} doses por ampola
-              </div>
-              <div style={{ color: '#4A9A6A', fontSize: 12, marginTop: 1 }}>
-                Ampola de {dados.totalAmpola}mg ÷ {dados.dose} por semana = {dosePreview} semanas de uso
-              </div>
+              <div style={{ fontSize:11, color:'var(--brown-light)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px' }}>Concentração calculada</div>
+              <div style={{ fontSize:22, fontWeight:800, color:'var(--copper)', marginTop:2 }}>{concCalc} mg/ml</div>
+            </div>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+              <path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>
+            </svg>
+          </div>
+        )}
+
+        {/* ── Preview doses por ampola ── */}
+        {dosesAmpola && dosesAmpola > 0 && (
+          <div style={{ marginTop:10, background:'linear-gradient(135deg,#E8F8EE,#F0F9F4)', border:'1.5px solid rgba(46,125,82,0.3)', borderRadius:14, padding:'12px 16px', display:'flex', alignItems:'center', gap:10, animation:'slideUp .3s .1s ease both' }}>
+            <span style={{ fontSize:24 }}>🧮</span>
+            <div>
+              <div style={{ fontWeight:800, color:'#2E7D52', fontSize:15 }}>{dosesAmpola} doses por ampola</div>
+              <div style={{ color:'#4A9A6A', fontSize:12, marginTop:1 }}>{dados.totalAmpola}mg ÷ {dados.dose}/semana = {dosesAmpola} semanas de uso</div>
             </div>
           </div>
         )}
+
+        {/* ── Opção: não tenho frasco ── */}
+        <button onClick={() => { set('totalAmpola',''); set('volumeMl',''); set('concentracaoAmpola','caneta'); next(); }}
+          style={{ width:'100%', marginTop:14, padding:'12px', borderRadius:12, border:'1.5px solid rgba(45,31,20,0.12)', background:'transparent', color:'#9A8070', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'center' }}>
+          Uso caneta pré-preenchida — pular esta etapa →
+        </button>
       </div>
-      <OBFooter onPress={next} disabled={!dados.concentracaoAmpola} />
+
+      <OBFooter onPress={next} disabled={!dados.totalAmpola} label="Confirmar e continuar" />
     </Wrap>
   );};
 
