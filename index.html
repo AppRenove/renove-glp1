@@ -345,6 +345,43 @@ function HomeScreen({ setTab, perfil }) {
           );
         })()}
 
+        {/* Rê proativa — Inteligência de adesão */}
+        {(() => {
+          const agora = new Date();
+          let diasSemDiario = 999;
+          try {
+            const diario = JSON.parse(localStorage.getItem('renove_diario') || '{}');
+            const datas = Object.keys(diario).sort().reverse();
+            if (datas.length > 0) diasSemDiario = Math.floor((agora - new Date(datas[0] + 'T00:00:00')) / 86400000);
+          } catch {}
+          let diasSemPeso = 999;
+          try {
+            const ps = JSON.parse(localStorage.getItem('renove_pesos') || '[]');
+            if (ps.length > 0) diasSemPeso = Math.floor((agora - new Date(ps[ps.length-1].dataISO + 'T00:00:00')) / 86400000);
+          } catch {}
+
+          let msg = null, destino = 'diario';
+          if (diasSemDiario >= 5) {
+            msg = { titulo: 'Rê está com saudade! 👋', texto: `${diasSemDiario} dias sem registro no diário. Monitorar sintomas regularmente faz toda a diferença no tratamento.`, cta: 'Abrir diário' };
+          } else if (diasSemPeso >= 14) {
+            msg = { titulo: 'Como está o peso? ⚖️', texto: 'Faz mais de 2 semanas sem pesagem. Acompanhar regularmente ajuda a entender a resposta ao medicamento.', cta: 'Registrar peso' };
+            destino = 'peso';
+          } else if (diasSemDiario >= 3) {
+            msg = { titulo: 'Tudo bem por aí? 🌿', texto: 'Alguns dias sem registro. Manter o hábito de monitorar sintomas é fundamental para o sucesso do tratamento.', cta: 'Preencher hoje' };
+          }
+          if (!msg) return null;
+          return (
+            <div style={{ background: 'linear-gradient(135deg, rgba(45,31,20,0.03) 0%, rgba(196,136,90,0.07) 100%)', borderRadius: 14, padding: '14px 16px', border: '1.5px solid rgba(196,136,90,0.25)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22, border: '2px solid rgba(196,136,90,0.3)' }}>🤖</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 3 }}>{msg.titulo}</div>
+                <div style={{ color: '#8A7060', fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}>{msg.texto}</div>
+                <button onClick={() => setTab(destino)} style={{ background: 'var(--copper)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{msg.cta} →</button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Peso */}
         <div className="card">
           <div className="flex items-center justify-between mb-3">
@@ -816,6 +853,9 @@ function DiarioScreen() {
 
 /* ─── TELA: PESO ─────────────────────────────────────────── */
 function PesoScreen({ perfil }) {
+  const [aba, setAba] = useState('peso');
+
+  // ── Peso ──
   const meta = parseFloat(perfil?.meta) || 85;
   const pesoInicialPerfil = parseFloat(perfil?.pesoInicio) || 112.4;
   const dataInicioPerfil = perfil?.dataInicio || '2025-02-01';
@@ -825,7 +865,6 @@ function PesoScreen({ perfil }) {
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
   };
 
-  // Carrega do localStorage, semeando com dados do perfil se vazio
   const [pesos, setPesos] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('renove_pesos') || 'null');
@@ -844,135 +883,297 @@ function PesoScreen({ perfil }) {
   const [periodo, setPeriodo] = useState('all');
   const [adicionado, setAdicionado] = useState(false);
 
-  const salvarPesos = (arr) => {
-    setPesos(arr);
-    localStorage.setItem('renove_pesos', JSON.stringify(arr));
-  };
+  const salvarPesos = (arr) => { setPesos(arr); localStorage.setItem('renove_pesos', JSON.stringify(arr)); };
 
   const nPts = { '14': 3, '30': 6, 'all': pesos.length };
   const dadosFiltrados = pesos.slice(-nPts[periodo]);
   const pesoAtual = pesos[pesos.length - 1].peso;
   const pesoInicio = pesos[0].peso;
   const perdido = Math.max(0, pesoInicio - pesoAtual).toFixed(1);
+  const kgPerdidos = parseFloat(perdido);
   const progresso = Math.max(0, Math.min(100, ((pesoInicio - pesoAtual) / (pesoInicio - meta) * 100))).toFixed(0);
   const faltaMeta = Math.max(0, pesoAtual - meta).toFixed(1);
+  const estimGordura = (kgPerdidos * 0.72).toFixed(1);
+  const estimMuscular = (kgPerdidos * 0.28).toFixed(1);
 
   const adicionar = () => {
     const p = parseFloat(novoPeso.replace(',', '.'));
     if (!p || p < 30 || p > 300) return;
     const hoje = new Date();
     const dataISO = hoje.toISOString().split('T')[0];
-    const data = fmtData(dataISO);
-    // Substitui se já existe entrada de hoje
     const filtrado = pesos.filter(x => x.dataISO !== dataISO);
-    salvarPesos([...filtrado, { data, peso: p, dataISO }].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1));
-    setNovoPeso('');
-    setAdicionado(true);
-    setTimeout(() => setAdicionado(false), 2500);
+    salvarPesos([...filtrado, { data: fmtData(dataISO), peso: p, dataISO }].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1));
+    setNovoPeso(''); setAdicionado(true); setTimeout(() => setAdicionado(false), 2500);
+  };
+
+  // ── Medidas ──
+  const [medidas, setMedidas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_medidas') || '[]'); } catch { return []; }
+  });
+  const [novaMedida, setNovaMedida] = useState({ cintura: '', quadril: '', braco: '', coxa: '' });
+  const [medidaSalva, setMedidaSalva] = useState(false);
+
+  const salvarMedida = () => {
+    const c = parseFloat(novaMedida.cintura.replace(',','.')), q = parseFloat(novaMedida.quadril.replace(',','.'));
+    const b = parseFloat(novaMedida.braco.replace(',','.')), t = parseFloat(novaMedida.coxa.replace(',','.'));
+    if (!c && !q && !b && !t) return;
+    const dataISO = new Date().toISOString().split('T')[0];
+    const novas = [...medidas.filter(m => m.dataISO !== dataISO),
+      { dataISO, data: fmtData(dataISO), cintura: c||null, quadril: q||null, braco: b||null, coxa: t||null }
+    ].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1);
+    setMedidas(novas); localStorage.setItem('renove_medidas', JSON.stringify(novas));
+    setNovaMedida({ cintura: '', quadril: '', braco: '', coxa: '' });
+    setMedidaSalva(true); setTimeout(() => setMedidaSalva(false), 2500);
+  };
+
+  const primeiraM = medidas[0], ultimaM = medidas[medidas.length - 1];
+  const deltaCintura = primeiraM?.cintura && ultimaM?.cintura ? (primeiraM.cintura - ultimaM.cintura).toFixed(1) : null;
+  const deltaQuadril = primeiraM?.quadril && ultimaM?.quadril ? (primeiraM.quadril - ultimaM.quadril).toFixed(1) : null;
+
+  let composSinal = 'neutro';
+  if (deltaCintura !== null && kgPerdidos > 2) {
+    const ratio = parseFloat(deltaCintura) / kgPerdidos;
+    composSinal = ratio >= 1.5 ? 'otimo' : ratio >= 0.8 ? 'bom' : 'atencao';
+  }
+  const composCfg = {
+    otimo:   { emoji:'🟢', cor:'#2E7D52', bg:'#E8F8EE',      txt:'Excelente! Você está perdendo principalmente gordura.' },
+    bom:     { emoji:'🟡', cor:'#C47A00', bg:'#FFF8E0',      txt:'Boa proporção. Continue priorizando proteína e musculação.' },
+    atencao: { emoji:'🔴', cor:'#C0392B', bg:'#FDECEA',      txt:'Atenção à massa magra. Consulte seu médico e aumente proteína.' },
+    neutro:  { emoji:'📏', cor:'var(--brown)', bg:'var(--copper-pale)', txt:'Registre medidas para análise de composição corporal.' },
   };
 
   return (
     <div className="screen">
-      <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Evolução de Peso ⚖️</h2>
-        <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Desde o início do tratamento</p>
-      </div>
-
-      <div className="px-4 py-4 flex flex-col gap-4">
-        {/* Cards de stats */}
-        <div className="flex gap-3">
-          {[
-            { label: 'Peso atual', valor: `${pesoAtual}kg`, cor: 'var(--brown)' },
-            { label: 'Perdidos', valor: perdido > 0 ? `↓ ${perdido}kg` : '—', cor: 'var(--green)' },
-            { label: 'Falta p/ meta', valor: `${faltaMeta}kg`, cor: 'var(--copper)' },
-          ].map(s => (
-            <div key={s.label} className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px' }}>
-              <div style={{ fontWeight: 800, fontSize: 17, color: s.cor }}>{s.valor}</div>
-              <div style={{ fontSize: 11, color: '#9A8070', marginTop: 2 }}>{s.label}</div>
-            </div>
+      <div className="header-grad px-5 pt-12 pb-4">
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 12 }}>Corpo & Composição</h2>
+        <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.18)', borderRadius: 12, padding: 4 }}>
+          {[['peso','⚖️ Peso'],['medidas','📏 Medidas']].map(([id, lbl]) => (
+            <button key={id} onClick={() => setAba(id)}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s',
+                background: aba === id ? 'var(--copper)' : 'transparent',
+                color: aba === id ? 'white' : 'rgba(245,237,227,0.6)' }}>{lbl}</button>
           ))}
         </div>
+      </div>
 
-        {/* Progresso meta */}
-        <div className="card">
-          <div className="flex justify-between items-center mb-2">
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>Progresso até {meta}kg</span>
-            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--copper)' }}>{progresso}%</span>
+      {aba === 'peso' ? (
+        <div className="px-4 py-4 flex flex-col gap-4">
+          {/* Stats */}
+          <div className="flex gap-3">
+            {[
+              { label: 'Peso atual',   valor: `${pesoAtual}kg`,                              cor: 'var(--brown)' },
+              { label: 'Perdidos',     valor: kgPerdidos > 0 ? `↓ ${perdido}kg` : '—',      cor: 'var(--green)' },
+              { label: 'Falta p/ meta', valor: `${faltaMeta}kg`,                             cor: 'var(--copper)' },
+            ].map(s => (
+              <div key={s.label} className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px' }}>
+                <div style={{ fontWeight: 800, fontSize: 17, color: s.cor }}>{s.valor}</div>
+                <div style={{ fontSize: 11, color: '#9A8070', marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ height: 10, background: '#EEE8E0', borderRadius: 5 }}>
-            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 5, width: `${progresso}%`, transition: 'width .5s' }} />
+
+          {/* Composição estimada */}
+          {kgPerdidos >= 1 && (
+            <div className="card" style={{ background: composSinal !== 'neutro' ? composCfg[composSinal].bg : undefined }}>
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>🧬 Composição estimada</div>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                <div style={{ flex: 1, background: 'rgba(196,136,90,0.1)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--copper)' }}>{estimGordura}kg</div>
+                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>🔥 Gordura perdida</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(78,160,120,0.1)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#2E7D52' }}>{estimMuscular}kg</div>
+                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>💪 Massa magra*</div>
+                </div>
+              </div>
+              {composSinal !== 'neutro' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(255,255,255,0.5)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 18 }}>{composCfg[composSinal].emoji}</span>
+                  <span style={{ fontSize: 13, color: composCfg[composSinal].cor, fontWeight: 600 }}>{composCfg[composSinal].txt}</span>
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: '#9A8070', marginTop: 8, lineHeight: 1.5 }}>
+                *Estimativa baseada em dados clínicos de GLP-1 (72% gordura / 28% massa magra). Registre medidas corporais na aba Medidas para análise mais precisa.
+              </div>
+            </div>
+          )}
+
+          {/* Progresso meta */}
+          <div className="card">
+            <div className="flex justify-between items-center mb-2">
+              <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--brown)' }}>Progresso até {meta}kg</span>
+              <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--copper)' }}>{progresso}%</span>
+            </div>
+            <div style={{ height: 10, background: '#EEE8E0', borderRadius: 5 }}>
+              <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--copper), var(--copper-light))', borderRadius: 5, width: `${progresso}%`, transition: 'width .5s' }} />
+            </div>
+            <div className="flex justify-between mt-2" style={{ fontSize: 11, color: '#9A8070' }}>
+              <span>Início: {pesoInicio}kg</span><span>Meta: {meta}kg</span>
+            </div>
           </div>
-          <div className="flex justify-between mt-2" style={{ fontSize: 11, color: '#9A8070' }}>
-            <span>Início: {pesoInicio}kg</span>
-            <span>Meta: {meta}kg</span>
+
+          {/* Registrar peso */}
+          <div className="card">
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Registrar novo peso</div>
+            {adicionado ? (
+              <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 10, padding: '12px 16px', textAlign: 'center', color: '#2E7D52', fontWeight: 700 }}>✅ Peso registrado!</div>
+            ) : (
+              <div className="flex gap-2">
+                <input type="number" inputMode="decimal" placeholder="Ex: 97,5" value={novoPeso}
+                  onChange={e => setNovoPeso(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionar()}
+                  style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)' }} />
+                <button onClick={adicionar} className="btn-primary" style={{ width: 'auto', padding: '12px 20px', fontSize: 15 }}>+ Salvar</button>
+              </div>
+            )}
+          </div>
+
+          {/* Gráfico */}
+          {pesos.length >= 2 && (
+            <div className="card">
+              <div className="flex justify-between items-center mb-3">
+                <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Gráfico</span>
+                <div className="flex gap-1">
+                  {[['14','14d'],['30','30d'],['all','Tudo']].map(([v,l]) => (
+                    <button key={v} onClick={() => setPeriodo(v)}
+                      style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
+                        background: periodo === v ? 'var(--copper)' : '#F5F0EC', color: periodo === v ? 'white' : '#8A7060' }}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <WeightChart dados={dadosFiltrados.length >= 2 ? dadosFiltrados : pesos} meta={meta} />
+            </div>
+          )}
+
+          {/* Histórico */}
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico</div>
+            {[...pesos].reverse().map((p, i, arr) => {
+              const anterior = arr[i + 1];
+              const diff = anterior ? (p.peso - anterior.peso) : null;
+              return (
+                <div key={p.dataISO || i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{p.data}</div>
+                    {i === 0 && <div style={{ fontSize: 11, color: 'var(--copper)', fontWeight: 600, marginTop: 1 }}>Mais recente</div>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {diff !== null && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : '#9A8070' }}>
+                        {diff < 0 ? `↓ ${Math.abs(diff).toFixed(1)}kg` : diff > 0 ? `↑ ${diff.toFixed(1)}kg` : '—'}
+                      </span>
+                    )}
+                    <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--brown)' }}>{p.peso}kg</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-
-        {/* Registrar novo peso */}
-        <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>Registrar novo peso</div>
-          {adicionado ? (
-            <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 10, padding: '12px 16px', textAlign: 'center', color: '#2E7D52', fontWeight: 700, fontSize: 15 }}>
-              ✅ Peso registrado!
+      ) : (
+        /* ── ABA MEDIDAS ── */
+        <div className="px-4 py-4 flex flex-col gap-4">
+          {/* Tendência geral */}
+          {medidas.length >= 2 && (
+            <div className="card" style={{ background: composCfg[composSinal].bg }}>
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Sua tendência corporal</div>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                {[[deltaCintura,'Cintura','🎯'],[deltaQuadril,'Quadril','🔵']].map(([delta, label, icon]) => delta !== null && (
+                  <div key={label} style={{ flex: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 12, padding: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 20 }}>{icon}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: parseFloat(delta) > 0 ? 'var(--green)' : '#C0392B' }}>
+                      {parseFloat(delta) > 0 ? `↓ ${delta}cm` : `↑ ${Math.abs(delta)}cm`}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#9A8070' }}>{label} desde início</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(255,255,255,0.5)', borderRadius: 10 }}>
+                <span style={{ fontSize: 18 }}>{composCfg[composSinal].emoji}</span>
+                <span style={{ fontSize: 13, color: composCfg[composSinal].cor, fontWeight: 600 }}>{composCfg[composSinal].txt}</span>
+              </div>
             </div>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="number" inputMode="decimal" placeholder="Ex: 97,5" value={novoPeso}
-                onChange={e => setNovoPeso(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && adicionar()}
-                style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)' }}
-              />
-              <button onClick={adicionar} className="btn-primary" style={{ width: 'auto', padding: '12px 20px', fontSize: 15 }}>
-                + Salvar
-              </button>
+          )}
+
+          {/* Registrar medidas */}
+          <div className="card">
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>📏 Registrar medidas de hoje</div>
+            <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 14px' }}>Use uma fita métrica. Registre ao menos 1x por mês.</p>
+            {medidaSalva ? (
+              <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 10, padding: '14px', textAlign: 'center', color: '#2E7D52', fontWeight: 700 }}>✅ Medidas salvas!</div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  {[
+                    { key: 'cintura', label: '🎯 Cintura (cm)', ph: 'Ex: 92' },
+                    { key: 'quadril', label: '🔵 Quadril (cm)', ph: 'Ex: 108' },
+                    { key: 'braco',   label: '💪 Braço (cm)',   ph: 'Ex: 34' },
+                    { key: 'coxa',    label: '🦵 Coxa (cm)',    ph: 'Ex: 58' },
+                  ].map(({ key, label, ph }) => (
+                    <div key={key}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--brown)', marginBottom: 5 }}>{label}</div>
+                      <input type="number" inputMode="decimal" placeholder={ph} value={novaMedida[key]}
+                        onChange={e => setNovaMedida(m => ({ ...m, [key]: e.target.value }))}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #E0D8D0', fontSize: 15, color: 'var(--brown)', boxSizing: 'border-box' }} />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={salvarMedida} className="btn-primary" style={{ fontSize: 15 }}>Salvar medidas</button>
+              </>
+            )}
+          </div>
+
+          {/* Guia */}
+          <div className="card" style={{ background: 'var(--copper-pale)' }}>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 8 }}>📋 Como medir corretamente</div>
+            {[
+              ['🎯 Cintura','Na parte mais estreita do abdômen, acima do umbigo'],
+              ['🔵 Quadril','Na parte mais larga dos quadris e glúteos'],
+              ['💪 Braço','No meio do braço direito, entre ombro e cotovelo'],
+              ['🦵 Coxa','Na parte mais larga da coxa direita'],
+            ].map(([local, inst]) => (
+              <div key={local} style={{ marginBottom: 6 }}>
+                <span style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 13 }}>{local}: </span>
+                <span style={{ color: '#8A7060', fontSize: 13 }}>{inst}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Tips proteção muscular */}
+          <div className="card" style={{ borderLeft: '4px solid var(--copper)' }}>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 10 }}>💪 Protegendo seus músculos no GLP-1</div>
+            {[
+              '🥩 Meta: 1,5–2g de proteína por kg de peso corporal por dia',
+              '🏋️ Musculação ou treino resistido 2–3x por semana',
+              '😴 Durma 7–9h — o músculo se regenera no sono',
+              '💊 Creatina pode ajudar na preservação — consulte seu médico',
+              '🚶 Caminhadas diárias também contam para manter massa magra',
+            ].map(tip => (
+              <div key={tip} style={{ fontSize: 13, color: '#6A5A4A', marginBottom: 7, lineHeight: 1.4 }}>{tip}</div>
+            ))}
+          </div>
+
+          {/* Histórico medidas */}
+          {medidas.length > 0 && (
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico</div>
+              {[...medidas].reverse().map((m, i) => (
+                <div key={m.dataISO} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{m.data}</span>
+                    {i === 0 && <span style={{ fontSize: 11, color: 'var(--copper)', fontWeight: 600 }}>Mais recente</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {m.cintura && <span style={{ fontSize: 12, background: 'var(--copper-pale)', color: 'var(--brown-light)', padding: '3px 10px', borderRadius: 20, fontWeight: 500 }}>Cintura {m.cintura}cm</span>}
+                    {m.quadril && <span style={{ fontSize: 12, background: 'var(--copper-pale)', color: 'var(--brown-light)', padding: '3px 10px', borderRadius: 20, fontWeight: 500 }}>Quadril {m.quadril}cm</span>}
+                    {m.braco   && <span style={{ fontSize: 12, background: 'var(--copper-pale)', color: 'var(--brown-light)', padding: '3px 10px', borderRadius: 20, fontWeight: 500 }}>Braço {m.braco}cm</span>}
+                    {m.coxa    && <span style={{ fontSize: 12, background: 'var(--copper-pale)', color: 'var(--brown-light)', padding: '3px 10px', borderRadius: 20, fontWeight: 500 }}>Coxa {m.coxa}cm</span>}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Gráfico */}
-        {pesos.length >= 2 && (
-          <div className="card">
-            <div className="flex justify-between items-center mb-3">
-              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Gráfico</span>
-              <div className="flex gap-1">
-                {[['14','14d'],['30','30d'],['all','Tudo']].map(([v,l]) => (
-                  <button key={v} onClick={() => setPeriodo(v)}
-                    style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
-                      background: periodo === v ? 'var(--copper)' : '#F5F0EC',
-                      color: periodo === v ? 'white' : '#8A7060' }}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <WeightChart dados={dadosFiltrados.length >= 2 ? dadosFiltrados : pesos} meta={meta} />
-          </div>
-        )}
-
-        {/* Histórico */}
-        <div>
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Histórico</div>
-          {[...pesos].reverse().map((p, i, arr) => {
-            const anterior = arr[i + 1];
-            const diff = anterior ? (p.peso - anterior.peso) : null;
-            return (
-              <div key={p.dataISO || i} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 6px rgba(45,31,20,0.05)' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 14 }}>{p.data}</div>
-                  {i === 0 && <div style={{ fontSize: 11, color: 'var(--copper)', fontWeight: 600, marginTop: 1 }}>Mais recente</div>}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {diff !== null && (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : '#9A8070' }}>
-                      {diff < 0 ? `↓ ${Math.abs(diff).toFixed(1)}kg` : diff > 0 ? `↑ ${diff.toFixed(1)}kg` : '—'}
-                    </span>
-                  )}
-                  <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--brown)' }}>{p.peso}kg</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
