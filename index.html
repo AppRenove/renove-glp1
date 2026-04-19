@@ -10,7 +10,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
   <style>
     :root {
       --brown:        #2D1F14;
@@ -95,6 +95,9 @@
       transition: all .15s; font-family: 'Inter', sans-serif;
     }
     .btn-outline:active { background: rgba(196,136,90,0.08); }
+
+    /* ── Fonte display premium ── */
+    .t-display { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.02em; }
 
     /* ── Header gradient ── */
     .header-grad {
@@ -449,6 +452,140 @@ function WeightChart({ dados, meta }) {
   );
 }
 
+/* ─── RÊ COM ROSTO ───────────────────────────────────────── */
+function ReHeadIcon({ size = 48, animated = false }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="20" fill="var(--copper)" opacity="0.92"/>
+      <circle cx="16" cy="20" r="3.5" fill="#2D1F14"/>
+      <circle cx="16" cy="20" r="1.4" fill="#FBF8F4" opacity="0.8"/>
+      <circle cx="32" cy="20" r="3.5" fill="#2D1F14"/>
+      <circle cx="32" cy="20" r="1.4" fill="#FBF8F4" opacity="0.8"/>
+      <path d="M 18 28 Q 24 33 30 28" stroke="#2D1F14" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <path d="M 28 7 Q 32 5 36 7" stroke="rgba(245,237,227,0.6)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <path d="M 28 11 Q 32 9 36 11" stroke="rgba(245,237,227,0.6)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <path d="M 28 15 Q 32 13 36 15" stroke="rgba(245,237,227,0.6)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      {animated && (
+        <style>{`@keyframes reWink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(0.1)}} circle[cx="32"][r="3.5"]{animation:reWink 4s ease-in-out infinite;transform-origin:32px 20px;}`}</style>
+      )}
+    </svg>
+  );
+}
+
+/* ─── FAB DA RÊ ──────────────────────────────────────────── */
+function ReFAB({ onClick }) {
+  const [showBalloon, setShowBalloon] = React.useState(false);
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowBalloon(true), 1200);
+    const t2 = setTimeout(() => setShowBalloon(false), 5000);
+    return () => { clearTimeout(t); clearTimeout(t2); };
+  }, []);
+  return (
+    <div style={{ position:'fixed', bottom:88, right:18, zIndex:60 }}>
+      {showBalloon && (
+        <div style={{ position:'absolute', bottom:70, right:0, background:'white', border:'1px solid rgba(45,31,20,0.12)', borderRadius:14, padding:'10px 14px', maxWidth:200, fontSize:12.5, color:'var(--brown)', lineHeight:1.5, boxShadow:'0 4px 16px rgba(45,31,20,0.12)', animation:'slideUp .4s cubic-bezier(.34,1.56,.64,1) both', whiteSpace:'nowrap' }}>
+          Oi! 👋 Precisa de ajuda?
+          <div style={{ position:'absolute', bottom:-6, right:18, width:0, height:0, borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:'6px solid white' }}/>
+        </div>
+      )}
+      <button onClick={onClick} style={{ width:58, height:58, borderRadius:'50%', border:'none', cursor:'pointer', padding:0, background:'linear-gradient(135deg,var(--copper) 0%,#8B4E1E 100%)', boxShadow:'0 6px 20px rgba(140,74,30,0.45)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform .2s cubic-bezier(.34,1.56,.64,1)' }}
+        onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
+        <ReHeadIcon size={38} animated />
+      </button>
+    </div>
+  );
+}
+
+/* ─── CONFETTI ───────────────────────────────────────────── */
+function Confetti() {
+  const colors = ['var(--copper)','var(--brown)','#2E7D52','#C47A00','var(--copper-light)'];
+  return (
+    <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:200, overflow:'hidden' }}>
+      {Array.from({ length: 18 }, (_, i) => (
+        <div key={i} style={{ position:'absolute', top:'-10px', left:`${5 + i * 5.5}%`, width: i%3===0?10:7, height: i%3===0?10:7, borderRadius: i%2===0?'50%':'2px', background:colors[i%colors.length], animation:`confettiFall ${1.2 + (i%4)*0.3}s cubic-bezier(.25,.46,.45,.94) ${i*0.08}s both` }}/>
+      ))}
+      <style>{`@keyframes confettiFall{from{transform:translateY(0) rotate(0deg);opacity:1}to{transform:translateY(110vh) rotate(720deg);opacity:0}}`}</style>
+    </div>
+  );
+}
+
+/* ─── SERINGA VISUALIZADORA ──────────────────────────────── */
+function SyringeVisualizer({ ui = 25, maxUI = 100, dose, med }) {
+  const fillPct = Math.min(100, (ui / maxUI) * 100);
+  return (
+    <div style={{ padding:'16px 0 8px' }}>
+      <svg width="100%" height="56" viewBox="0 0 340 56" preserveAspectRatio="xMidYMid meet">
+        {/* Corpo */}
+        <rect x="8" y="18" width="220" height="20" rx="4" fill="none" stroke="var(--brown)" strokeWidth="1.8"/>
+        {/* Preenchimento */}
+        <rect x="8" y="18" width={220 * (fillPct / 100)} height="20" rx="4" fill="var(--copper)" opacity="0.75"/>
+        {/* Marcações */}
+        {[0,25,50,75,100].map(pct => (
+          <g key={pct}>
+            <line x1={8+(220*pct/100)} y1="16" x2={8+(220*pct/100)} y2="11" stroke="var(--brown)" strokeWidth="1.4" opacity="0.6"/>
+            <text x={8+(220*pct/100)} y="46" textAnchor="middle" fill="var(--brown-light)" fontSize="9" fontFamily="Inter,sans-serif" opacity="0.7">{pct}</text>
+          </g>
+        ))}
+        {/* Êmbolo */}
+        <rect x={8+(220*fillPct/100)-3} y="15" width="5" height="26" rx="2" fill="var(--brown)"/>
+        {/* Agulha */}
+        <line x1="228" y1="24" x2="300" y2="24" stroke="var(--brown)" strokeWidth="2" opacity="0.7"/>
+        <polygon points="300,28 316,28 310,24" fill="#C0392B"/>
+      </svg>
+      <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:24, marginTop:4 }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:10, color:'var(--brown-light)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', fontFamily:'Inter,sans-serif' }}>Puxar</div>
+          <div style={{ fontSize:26, fontWeight:800, color:'var(--brown)', lineHeight:1, marginTop:2 }}>{ui} <span style={{ fontSize:13, fontWeight:600, color:'var(--brown-light)' }}>UI</span></div>
+        </div>
+        {dose && <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:10, color:'var(--brown-light)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px' }}>Dose</div>
+          <div style={{ fontSize:26, fontWeight:800, color:'var(--copper)', lineHeight:1, marginTop:2 }}>{dose} <span style={{ fontSize:13, fontWeight:600, color:'var(--copper-light)' }}>mg</span></div>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── ANIMAÇÃO DE APLICAÇÃO PASSO A PASSO ───────────────── */
+function ApplicacaoAnimada() {
+  const [step, setStep] = React.useState(0);
+  const steps = [
+    { num:'1', titulo:'Limpe a pele', desc:'Álcool 70% no local, aguarde secar completamente' },
+    { num:'2', titulo:'Faça uma prega', desc:'Levante a pele entre 2 dedos suavemente' },
+    { num:'3', titulo:'Posicione a agulha', desc:'Insira em ângulo de 45°–90° na pele' },
+    { num:'4', titulo:'Injete devagar', desc:'Pressione o êmbolo lentamente, aguarde 5 seg' },
+    { num:'5', titulo:'Remova com cuidado', desc:'Retire a agulha e descarte com segurança' },
+  ];
+  React.useEffect(() => {
+    const t = setInterval(() => setStep(s => (s + 1) % steps.length), 4500);
+    return () => clearInterval(t);
+  }, []);
+
+  const icons = ['🧴','🤏','💉','⏳','✅'];
+  return (
+    <div style={{ background:'linear-gradient(135deg,rgba(196,136,90,0.08),rgba(196,136,90,0.04))', borderRadius:14, padding:'16px', border:'1.5px solid rgba(196,136,90,0.2)' }}>
+      {/* Indicador visual do passo */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+        <div style={{ width:44, height:44, borderRadius:12, background:'linear-gradient(135deg,var(--copper),var(--copper-light))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+          {icons[step]}
+        </div>
+        <div>
+          <div style={{ fontSize:10, color:'var(--copper)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.6px' }}>Passo {step+1} de {steps.length}</div>
+          <div style={{ fontSize:16, fontWeight:800, color:'var(--brown)', marginTop:1, letterSpacing:'-0.3px' }}>{steps[step].titulo}</div>
+        </div>
+      </div>
+      <p style={{ fontSize:13, color:'var(--brown-light)', margin:'0 0 14px', lineHeight:1.5 }}>{steps[step].desc}</p>
+      {/* Progress dots */}
+      <div style={{ display:'flex', gap:6, justifyContent:'center' }}>
+        {steps.map((_, i) => (
+          <button key={i} onClick={() => setStep(i)} style={{ width: i===step?28:8, height:8, borderRadius:4, background: i<=step?'var(--brown)':'rgba(45,31,20,0.15)', border:'none', cursor:'pointer', transition:'all .3s cubic-bezier(.34,1.56,.64,1)', padding:0 }}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── TELA: HOME ─────────────────────────────────────────── */
 function HomeScreen({ setTab, perfil }) {
   const pesoAtual  = parseFloat(perfil?.pesoAtual)  || 98.9;
@@ -483,7 +620,7 @@ function HomeScreen({ setTab, perfil }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>{saudacao}</p>
-            <h1 style={{ color: 'var(--cream)', fontSize: 26, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{perfil?.nome || 'Guilherme'}</h1>
+            <h1 className="t-display" style={{ color: 'var(--cream)', fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: '-0.5px' }}>{perfil?.nome || 'Guilherme'}</h1>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button onClick={() => setTab('notificacoes')} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(196,136,90,0.15)', border: '1.5px solid rgba(196,136,90,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -704,6 +841,9 @@ function HomeScreen({ setTab, perfil }) {
           ))}
         </div>
       </div>
+
+      {/* FAB da Rê flutuante */}
+      <ReFAB onClick={() => setTab('rê')} />
     </div>
   );
 }
@@ -717,6 +857,7 @@ function PlanejadorScreen({ perfil }) {
   const [showModal, setShowModal] = useState(false);
   const [localSel, setLocalSel] = useState(0);
   const [doseInput, setDoseInput] = useState('');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // ── Calcular datas ──
   const hoje = new Date();
@@ -782,13 +923,22 @@ function PlanejadorScreen({ perfil }) {
     setAplicacoes(novas);
     localStorage.setItem('renove_aplicacoes', JSON.stringify(novas));
     setShowModal(false);
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 2800);
   };
 
   const janelaValida = diasRest !== null && diasRest <= 4;
   const historico = [...aplicacoes].reverse().slice(0, 8);
 
+  // ── Calcular UI da seringa ──
+  const doseNum = parseFloat(doseInput || dosePerfil);
+  const concNum = parseFloat(perfil?.concentracaoAmpola);
+  const uiCalc = (!isNaN(doseNum) && !isNaN(concNum) && concNum > 0)
+    ? Math.round((doseNum / concNum) * 100) : null;
+
   return (
     <div className="screen">
+      {showConfetti && <Confetti />}
       <div className="header-grad px-5 pt-12 pb-6">
         <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 4, letterSpacing: '-0.3px' }}>Planejador</h2>
         <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Sua picadinha semanal</p>
@@ -887,6 +1037,21 @@ function PlanejadorScreen({ perfil }) {
             ) : null}
           </>
         )}
+
+        {/* Seringa visual + técnica de aplicação */}
+        {uiCalc && (
+          <div className="card">
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 2 }}>Sua dose desta semana</div>
+            <p style={{ color: '#8A7060', fontSize: 12, margin: '0 0 4px' }}>Puxe exatamente esta quantidade na seringa U-100</p>
+            <SyringeVisualizer ui={uiCalc} maxUI={100} dose={dosePerfil?.replace('mg','')} />
+          </div>
+        )}
+
+        {/* Guia passo a passo */}
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Técnica de aplicação</div>
+          <ApplicacaoAnimada />
+        </div>
 
         {/* Histórico */}
         <div>
@@ -1644,10 +1809,13 @@ function ReScreen({ perfil }) {
       {/* Header */}
       <div className="header-grad px-5 pt-12 pb-5" style={{ flexShrink: 0 }}>
         <div className="flex items-center gap-3">
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(196,136,90,0.2)', border: '2px solid var(--copper)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🌿</div>
+          <ReHeadIcon size={44} animated />
           <div>
-            <div style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 17 }}>Rê</div>
-            <div style={{ color: 'var(--green)', fontSize: 12, fontWeight: 500 }}>● Online</div>
+            <div style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 17, fontFamily:'Fraunces, serif' }}>Rê</div>
+            <div style={{ color: 'var(--green)', fontSize: 12, fontWeight: 600, display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:'#4CAF7A', display:'inline-block', animation:'pulse 2s ease-in-out infinite' }}/>
+              Especialista GLP-1 · Online
+            </div>
           </div>
         </div>
       </div>
@@ -1657,7 +1825,9 @@ function ReScreen({ perfil }) {
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: m.de === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
             {m.de === 'rê' && (
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginRight: 8, flexShrink: 0, alignSelf: 'flex-end' }}>🌿</div>
+              <div style={{ marginRight: 8, flexShrink: 0, alignSelf: 'flex-end' }}>
+                <ReHeadIcon size={30} />
+              </div>
             )}
             <div className={m.de === 'user' ? 'chat-bubble-user' : 'chat-bubble-rê'}
               style={{ maxWidth: '78%', padding: '10px 14px', fontSize: 14, lineHeight: 1.5, color: m.de === 'user' ? 'white' : 'var(--brown)', whiteSpace: 'pre-wrap' }}>
@@ -1667,7 +1837,7 @@ function ReScreen({ perfil }) {
         ))}
         {loading && (
           <div style={{ display: 'flex', marginBottom: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginRight: 8 }}>🌿</div>
+            <div style={{ marginRight: 8 }}><ReHeadIcon size={30} /></div>
             <div className="chat-bubble-rê" style={{ padding: '14px 18px' }}>
               <div className="flex gap-1">
                 {[0,1,2].map(i => <div key={i} className="pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--copper)', animationDelay: `${i*0.2}s` }} />)}
