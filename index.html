@@ -219,12 +219,24 @@ const OPENAI_KEY = window.__RENOVE_API_KEY__ || '';
 function buildSistemaRe(perfil) {
   const nome = perfil?.nome ? `O usuário se chama ${perfil.nome}.` : '';
   const med = perfil?.medicamento ? `Usa ${perfil.medicamento}` : 'Usa medicamento GLP-1';
-  const dose = perfil?.dose ? ` na dose atual de ${perfil.dose}.` : '.';
+  const doseSemanLabel = perfil?.dose ? ` Dose semanal aplicada: ${perfil.dose}.` : '.';
   const conc = perfil?.concentracaoAmpola && perfil.concentracaoAmpola !== 'nao-sei'
-    ? ` Ampola com concentração de ${perfil.concentracaoAmpola}.` : '';
+    ? ` Concentração da ampola: ${perfil.concentracaoAmpola}.` : '';
+  const totalAmpola = perfil?.totalAmpola ? ` Conteúdo total da ampola: ${perfil.totalAmpola}mg.` : '';
   const inicio = perfil?.dataInicio ? ` Em tratamento desde ${new Date(perfil.dataInicio).toLocaleDateString('pt-BR')}.` : '';
 
-  return `Você é a Rê, especialista em GLP-1 do app Renove. ${nome} ${med}${dose}${conc}${inicio}
+  // Calcula número de doses por ampola se tiver as infos
+  let dosesPorAmpola = '';
+  if (perfil?.totalAmpola && perfil?.dose) {
+    const totalMg = parseFloat(perfil.totalAmpola);
+    const doseMg = parseFloat(perfil.dose);
+    if (!isNaN(totalMg) && !isNaN(doseMg) && doseMg > 0) {
+      const ndoses = Math.floor(totalMg / doseMg);
+      dosesPorAmpola = ` A ampola rende aproximadamente ${ndoses} doses de ${doseMg}mg.`;
+    }
+  }
+
+  return `Você é a Rê, especialista em GLP-1 do app Renove. ${nome} ${med}${doseSemanLabel}${conc}${totalAmpola}${dosesPorAmpola}${inicio}
 
 CONTEXTO DO USUÁRIO: Paciente brasileiro em tratamento com GLP-1 manipulado (Tirzepatida, Semaglutida, T.G, Lipoless ou similar). Pode usar caneta ou seringa de insulina com frasco multidose.
 
@@ -237,8 +249,32 @@ REGRAS DE RESPOSTA (CRÍTICO):
 - Se a pergunta for vaga, responda o caso mais provável e ofereça opções.
 
 CONHECIMENTO TÉCNICO GLP-1:
-Tirzepatida (doses: 2,5 / 5 / 7,5 / 10 / 12,5 / 15mg) — agonista duplo GIP+GLP-1
-Semaglutida (doses: 0,25 / 0,5 / 1 / 1,7 / 2,4mg) — agonista GLP-1
+Tirzepatida (doses semanais: 2,5 / 5 / 7,5 / 10 / 12,5 / 15mg) — agonista duplo GIP+GLP-1
+Semaglutida (doses semanais: 0,25 / 0,5 / 1 / 1,7 / 2,4mg) — agonista GLP-1
+
+FRACIONAMENTO DE AMPOLAS — CONCEITO ESSENCIAL:
+É MUITO COMUM no Brasil comprar uma ampola com alto conteúdo total (ex: 15mg, 20mg, 30mg) e fracionar em doses semanais menores. O conteúdo da ampola e a dose semanal são coisas DIFERENTES:
+• "Minha ampola é de 15mg" → conteúdo total da ampola (não a dose aplicada)
+• "Tomo 2,5mg por semana" → dose semanal real aplicada
+• Uma ampola de 15mg fracionada em 2,5mg/semana rende 6 doses (6 semanas)
+• Uma ampola de 15mg fracionada em 5mg/semana rende 3 doses (3 semanas)
+• Uma ampola de 20mg fracionada em 2,5mg/semana rende 8 doses
+
+Quando alguém diz "tenho ampola de 15mg mas tomo 2,5mg" — entenda que 15mg é o total e 2,5mg é a dose semanal. Nunca confunda os dois.
+
+CÁLCULO DE UI NA SERINGA (seringa de insulina U100 = 100 UI por 1ml):
+Fórmula: UI a puxar = (dose semanal em mg ÷ concentração em mg/ml) × 100
+
+Exemplos práticos de fracionamento:
+• Ampola 10mg/ml total 20mg, dose 2,5mg/semana → 2,5 ÷ 10 × 100 = 25 UI por aplicação → 8 aplicações
+• Ampola 10mg/ml total 15mg, dose 5mg/semana → 5 ÷ 10 × 100 = 50 UI por aplicação → 3 aplicações
+• Ampola 5mg/ml total 10mg, dose 2,5mg/semana → 2,5 ÷ 5 × 100 = 50 UI por aplicação → 4 aplicações
+• Ampola 15mg/ml total 15mg, dose 2,5mg/semana → 2,5 ÷ 15 × 100 ≈ 17 UI por aplicação → 6 aplicações
+• Ampola 15mg/ml total 30mg, dose 5mg/semana → 5 ÷ 15 × 100 ≈ 33 UI por aplicação → 6 aplicações
+
+Se o usuário perguntar "quantas UI puxar" → peça a concentração (mg/ml) e a dose semanal (mg) e calcule.
+Se perguntar "quantas doses rende minha ampola" → peça total da ampola e dose semanal e divida.
+Se só mencionar "ampola de Xmg" sem especificar concentração → pergunte a concentração (mg/ml).
 
 JANELA DE DOSE: ±3 dias da data prevista é seguro. Esqueceu há menos de 3 dias → aplique agora. Passou de 3 dias → espere a data original da próxima semana.
 
@@ -269,14 +305,6 @@ Comer devagar e mastigar bem — saciedade do GLP-1 é ampliada.
 PLATEAU DE PESO: Normal após 8-12 semanas. Causas: adaptação metabólica, retenção hídrica, pouco músculo. Solução: revisar proteína, adicionar treino de força.
 
 COMPOSIÇÃO CORPORAL: GLP-1 sem treino de força → até 30-40% da perda pode ser músculo. Com treino de força + proteína adequada → preserva 80%+ de massa magra.
-
-CÁLCULO DE DOSE NA SERINGA (para frascos manipulados, seringa U100):
-Fórmula: UI a puxar = (dose em mg ÷ concentração em mg/ml) × 100
-Exemplos:
-• Ampola 10mg/ml, dose 5mg → 5 ÷ 10 × 100 = 50 UI
-• Ampola 15mg/ml, dose 7,5mg → 7,5 ÷ 15 × 100 = 50 UI
-• Ampola 5mg/ml, dose 2,5mg → 2,5 ÷ 5 × 100 = 50 UI
-Se o usuário perguntar "quantas UI puxar" e você souber a concentração e a dose, calcule direto.
 
 SITUAÇÕES QUE REQUEREM MÉDICO: Pancreatite (dor intensa no abdômen irradiando para costas), vômitos >24h, alergia grave, frequência cardíaca muito elevada em repouso.
 
@@ -1707,6 +1735,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
     nome:       perfil?.nome       || '',
     medicamento: perfil?.medicamento || '',
     concentracaoAmpola: perfil?.concentracaoAmpola || '',
+    totalAmpola: perfil?.totalAmpola || '',
     dose:       perfil?.dose       || '',
     dataInicio: perfil?.dataInicio || '',
     pesoAtual:  String(perfil?.pesoAtual  || ''),
@@ -1829,6 +1858,30 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
                 Caneta pré-preenchida
               </button>
             </div>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <label style={labelStyle}>Total da ampola (mg)</label>
+            <p style={{ fontSize: 12, color: '#9A8070', margin: '0 0 10px', lineHeight: 1.4 }}>Conteúdo total do frasco — não é a dose semanal. Ex: 15mg fracionado em 2,5mg = 6 aplicações</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              {['5','7,5','10','15','20','25','30','45','60'].map(t => (
+                <button key={t} onClick={() => upd('totalAmpola', t)}
+                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
+                    background: form.totalAmpola === t ? 'var(--copper)' : '#F5F0EC',
+                    color: form.totalAmpola === t ? 'white' : 'var(--brown-light)' }}>
+                  {t}mg
+                </button>
+              ))}
+            </div>
+            {/* Preview doses */}
+            {form.totalAmpola && form.dose && !isNaN(parseFloat(form.totalAmpola)) && !isNaN(parseFloat(form.dose)) && parseFloat(form.dose) > 0 && (
+              <div style={{ background: '#E8F8EE', border: '1px solid rgba(46,125,82,0.25)', borderRadius: 11, padding: '10px 13px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🧮</span>
+                <span style={{ fontSize: 13, color: '#2E7D52', fontWeight: 600 }}>
+                  {Math.floor(parseFloat(form.totalAmpola) / parseFloat(form.dose))} doses de {form.dose} por ampola
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2095,7 +2148,7 @@ function OnboardingScreen({ onComplete }) {
   const TOTAL = 12;
   const [step, setStep] = useState(0);
   const [dados, setDados] = useState({
-    status: '', nome: '', medicamento: '', concentracaoAmpola: '', dose: '5mg',
+    status: '', nome: '', medicamento: '', concentracaoAmpola: '', totalAmpola: '', dose: '5mg',
     dataInicio: new Date().toISOString().split('T')[0],
     sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
   });
@@ -2292,50 +2345,92 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 4: Concentração da ampola ── */
-  if (step === 4) return (
+  /* ── Step 4: Concentração + Total da ampola ── */
+  if (step === 4) {
+    // Calcula preview de doses ao vivo se tiver total e dose selecionada
+    const totalNum = parseFloat(dados.totalAmpola);
+    const doseNum  = parseFloat(dados.dose);
+    const dosePreview = !isNaN(totalNum) && !isNaN(doseNum) && doseNum > 0
+      ? Math.floor(totalNum / doseNum) : null;
+
+    return (
     <Wrap>
-      <OBHeader title="Qual a concentração da sua ampola?" subtitle="Verifique no frasco ou na receita médica" />
-      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
-        {/* Dica visual */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(196,136,90,0.12), rgba(196,136,90,0.05))', borderRadius: 14, padding: '12px 14px', border: '1px solid rgba(196,136,90,0.25)', display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 4 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p style={{ color: 'var(--brown-light)', fontSize: 12.5, margin: 0, lineHeight: 1.5 }}>
-            A concentração fica impressa no frasco. Exemplo: <strong style={{ color: 'var(--brown)' }}>10mg/ml</strong> significa que cada ml contém 10mg do medicamento.
+      <OBHeader title="Sua ampola de medicamento" subtitle="Concentração e conteúdo total — verifique no frasco" />
+      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+
+        {/* ── Seção 1: Concentração (mg/ml) ── */}
+        <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 2 }}>Concentração (mg/ml)</div>
+        <div style={{ background: 'rgba(196,136,90,0.08)', borderRadius: 12, padding: '10px 13px', border: '1px solid rgba(196,136,90,0.2)', display: 'flex', gap: 9, alignItems: 'flex-start', marginBottom: 2 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p style={{ color: 'var(--brown-light)', fontSize: 12, margin: 0, lineHeight: 1.45 }}>
+            Ex: <strong style={{ color: 'var(--brown)' }}>10mg/ml</strong> = cada ml tem 10mg. Está impresso no frasco ou na receita.
           </p>
         </div>
         {concentracoesAtivas.map(c => (
           <button key={c.val} onClick={() => set('concentracaoAmpola', c.val)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 14,
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 13,
               border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`,
               background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.08)' : 'white',
               cursor: 'pointer', textAlign: 'left', transition: 'all .15s',
               boxShadow: dados.concentracaoAmpola === c.val ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
-            {/* Ícone de frasco */}
-            <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.15)' : '#F5F0EC', transition: 'background .15s' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={dados.concentracaoAmpola === c.val ? 'var(--copper)' : '#9A8070'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.15)' : '#F5F0EC' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dados.concentracaoAmpola === c.val ? 'var(--copper)' : '#9A8070'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="1" width="6" height="4" rx="1.5"/><rect x="5" y="5" width="14" height="18" rx="3"/>
                 <line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/>
               </svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>{c.label}</div>
-              {c.val !== 'nao-sei' && <div style={{ fontSize: 11.5, color: '#9A8070', marginTop: 2, fontFamily: 'monospace', letterSpacing: '0.1px' }}>{c.sub}</div>}
-              {c.val === 'nao-sei' && <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>Você pode ajustar depois no perfil</div>}
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14.5 }}>{c.label}</div>
+              {c.val !== 'nao-sei' && <div style={{ fontSize: 11, color: '#9A8070', marginTop: 1, letterSpacing: '0.1px' }}>{c.sub}</div>}
+              {c.val === 'nao-sei' && <div style={{ fontSize: 11.5, color: '#9A8070', marginTop: 1 }}>Ajuste depois no Perfil</div>}
             </div>
-            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+            <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
               border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.18)'}`,
               background: dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
-              {dados.concentracaoAmpola === c.val && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {dados.concentracaoAmpola === c.val && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
             </div>
           </button>
         ))}
+
+        {/* ── Seção 2: Total da ampola (mg) ── */}
+        <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginTop: 8, marginBottom: 2 }}>Total da ampola (mg)</div>
+        <div style={{ background: 'rgba(196,136,90,0.08)', borderRadius: 12, padding: '10px 13px', border: '1px solid rgba(196,136,90,0.2)', display: 'flex', gap: 9, alignItems: 'flex-start', marginBottom: 2 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p style={{ color: 'var(--brown-light)', fontSize: 12, margin: 0, lineHeight: 1.45 }}>
+            Conteúdo <strong style={{ color: 'var(--brown)' }}>total</strong> do frasco — não é sua dose semanal. Ex: ampola de <strong>15mg</strong> fracionada em doses de 2,5mg = 6 aplicações.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['5mg','7,5mg','10mg','15mg','20mg','25mg','30mg','45mg','60mg','Outro'].map(t => (
+            <button key={t} onClick={() => set('totalAmpola', t === 'Outro' ? '' : t.replace('mg',''))}
+              style={{ padding: '9px 15px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: dados.totalAmpola === t.replace('mg','') ? 'var(--copper)' : '#F5F0EC',
+                color: dados.totalAmpola === t.replace('mg','') ? 'white' : 'var(--brown-light)',
+                transition: 'all .15s' }}>
+              {t}
+            </button>
+          ))}
+        </div>
+        {/* Preview de doses se possível */}
+        {dosePreview && (
+          <div style={{ background: 'linear-gradient(135deg, #E8F8EE, #F0F9F4)', border: '1.5px solid rgba(46,125,82,0.3)', borderRadius: 13, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>🧮</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#2E7D52', fontSize: 14 }}>
+                {dosePreview} doses por ampola
+              </div>
+              <div style={{ color: '#4A9A6A', fontSize: 12, marginTop: 1 }}>
+                Ampola de {dados.totalAmpola}mg ÷ {dados.dose} por semana = {dosePreview} semanas de uso
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <OBFooter onPress={next} disabled={!dados.concentracaoAmpola} />
     </Wrap>
-  );
+  );};
 
   /* ── Step 5: Dose ── */
   if (step === 5) return (
@@ -2462,7 +2557,10 @@ function OnboardingScreen({ onComplete }) {
               dados.concentracaoAmpola && dados.concentracaoAmpola !== 'nao-sei'
                 ? { label: 'Concentração da ampola', valor: dados.concentracaoAmpola, icon: '🧪' }
                 : null,
-              { label: 'Dose atual', valor: dados.dose, icon: '📏' },
+              dados.totalAmpola
+                ? { label: 'Total da ampola', valor: `${dados.totalAmpola}mg`, icon: '💉' }
+                : null,
+              { label: 'Dose semanal', valor: dados.dose, icon: '📏' },
               { label: 'Peso no início', valor: `${dados.pesoInicio} kg`, icon: '⚖️' },
               { label: 'Peso atual', valor: `${dados.pesoAtual} kg`, icon: '📍' },
               { label: 'Meta de peso', valor: `${dados.meta} kg`, icon: '🎯' },
