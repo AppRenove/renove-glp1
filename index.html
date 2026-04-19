@@ -220,9 +220,11 @@ function buildSistemaRe(perfil) {
   const nome = perfil?.nome ? `O usuário se chama ${perfil.nome}.` : '';
   const med = perfil?.medicamento ? `Usa ${perfil.medicamento}` : 'Usa medicamento GLP-1';
   const dose = perfil?.dose ? ` na dose atual de ${perfil.dose}.` : '.';
+  const conc = perfil?.concentracaoAmpola && perfil.concentracaoAmpola !== 'nao-sei'
+    ? ` Ampola com concentração de ${perfil.concentracaoAmpola}.` : '';
   const inicio = perfil?.dataInicio ? ` Em tratamento desde ${new Date(perfil.dataInicio).toLocaleDateString('pt-BR')}.` : '';
 
-  return `Você é a Rê, especialista em GLP-1 do app Renove. ${nome} ${med}${dose}${inicio}
+  return `Você é a Rê, especialista em GLP-1 do app Renove. ${nome} ${med}${dose}${conc}${inicio}
 
 CONTEXTO DO USUÁRIO: Paciente brasileiro em tratamento com GLP-1 manipulado (Tirzepatida, Semaglutida, T.G, Lipoless ou similar). Pode usar caneta ou seringa de insulina com frasco multidose.
 
@@ -267,6 +269,14 @@ Comer devagar e mastigar bem — saciedade do GLP-1 é ampliada.
 PLATEAU DE PESO: Normal após 8-12 semanas. Causas: adaptação metabólica, retenção hídrica, pouco músculo. Solução: revisar proteína, adicionar treino de força.
 
 COMPOSIÇÃO CORPORAL: GLP-1 sem treino de força → até 30-40% da perda pode ser músculo. Com treino de força + proteína adequada → preserva 80%+ de massa magra.
+
+CÁLCULO DE DOSE NA SERINGA (para frascos manipulados, seringa U100):
+Fórmula: UI a puxar = (dose em mg ÷ concentração em mg/ml) × 100
+Exemplos:
+• Ampola 10mg/ml, dose 5mg → 5 ÷ 10 × 100 = 50 UI
+• Ampola 15mg/ml, dose 7,5mg → 7,5 ÷ 15 × 100 = 50 UI
+• Ampola 5mg/ml, dose 2,5mg → 2,5 ÷ 5 × 100 = 50 UI
+Se o usuário perguntar "quantas UI puxar" e você souber a concentração e a dose, calcule direto.
 
 SITUAÇÕES QUE REQUEREM MÉDICO: Pancreatite (dor intensa no abdômen irradiando para costas), vômitos >24h, alergia grave, frequência cardíaca muito elevada em repouso.
 
@@ -1696,6 +1706,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
   const [form, setForm] = useState({
     nome:       perfil?.nome       || '',
     medicamento: perfil?.medicamento || '',
+    concentracaoAmpola: perfil?.concentracaoAmpola || '',
     dose:       perfil?.dose       || '',
     dataInicio: perfil?.dataInicio || '',
     pesoAtual:  String(perfil?.pesoAtual  || ''),
@@ -1772,7 +1783,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
             </select>
           </div>
 
-          <div>
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Dose atual</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Personalizada'].map(d => (
@@ -1788,6 +1799,36 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
               <input type="text" placeholder="Ex: 3mg" onChange={e => upd('dose', e.target.value)}
                 style={{ ...fieldStyle, marginTop: 10 }} />
             )}
+          </div>
+
+          <div>
+            <label style={labelStyle}>Concentração da ampola</label>
+            <p style={{ fontSize: 12, color: '#9A8070', margin: '0 0 10px', lineHeight: 1.4 }}>Para frascos manipulados — verifique no rótulo ou receita</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {((['semaglutida-generica', 'Semaglutida Genérica'].includes(form.medicamento))
+                ? ['0,5mg/ml', '1mg/ml', '2mg/ml', '3mg/ml', '5mg/ml']
+                : ['5mg/ml', '10mg/ml', '15mg/ml', '20mg/ml', '25mg/ml', '30mg/ml']
+              ).map(c => (
+                <button key={c} onClick={() => upd('concentracaoAmpola', c)}
+                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                    background: form.concentracaoAmpola === c ? 'var(--copper)' : '#F5F0EC',
+                    color: form.concentracaoAmpola === c ? 'white' : 'var(--brown-light)', border: 'none' }}>
+                  {c}
+                </button>
+              ))}
+              <button onClick={() => upd('concentracaoAmpola', 'nao-sei')}
+                style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: form.concentracaoAmpola === 'nao-sei' ? '#9A8070' : '#F5F0EC',
+                  color: form.concentracaoAmpola === 'nao-sei' ? 'white' : 'var(--brown-light)', border: 'none' }}>
+                Não sei
+              </button>
+              <button onClick={() => upd('concentracaoAmpola', '')}
+                style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: !form.concentracaoAmpola ? '#E0D8D0' : '#F5F0EC',
+                  color: 'var(--brown-light)', border: 'none' }}>
+                Caneta pré-preenchida
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2051,10 +2092,10 @@ function NumberStepper({ value, onChange, min = 40, max = 300, step = 0.5, unit 
 }
 
 function OnboardingScreen({ onComplete }) {
-  const TOTAL = 11;
+  const TOTAL = 12;
   const [step, setStep] = useState(0);
   const [dados, setDados] = useState({
-    status: '', nome: '', medicamento: '', dose: '5mg',
+    status: '', nome: '', medicamento: '', concentracaoAmpola: '', dose: '5mg',
     dataInicio: new Date().toISOString().split('T')[0],
     sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
   });
@@ -2063,8 +2104,21 @@ function OnboardingScreen({ onComplete }) {
   const toggleObj = id => setDados(p => ({
     ...p, objetivos: p.objetivos.includes(id) ? p.objetivos.filter(o => o !== id) : [...p.objetivos, id],
   }));
-  const next = () => setStep(s => s + 1);
-  const back = () => setStep(s => s - 1);
+
+  // Meds que usam frasco/ampola manipulada (mostrar step de concentração)
+  const medsComAmpola = ['tg','lipoless','tirzec','lipoland','gluconex','tirzepatida-generica','semaglutida-generica','outro'];
+  const usaAmpola = medsComAmpola.includes(dados.medicamento);
+
+  const next = () => {
+    // Pula step 4 (concentração) se o med usa caneta pré-preenchida
+    if (step === 3 && !usaAmpola) return setStep(5);
+    setStep(s => s + 1);
+  };
+  const back = () => {
+    // Ao voltar do step 5 (dose), pula step 4 se não usa ampola
+    if (step === 5 && !usaAmpola) return setStep(3);
+    setStep(s => s - 1);
+  };
   const salvar = () => {
     const perfil = { ...dados, criadoEm: new Date().toISOString() };
     localStorage.setItem('renove_perfil', JSON.stringify(perfil));
@@ -2092,6 +2146,27 @@ function OnboardingScreen({ onComplete }) {
     { id: 'outro', label: 'Outro GLP-1', sub: 'Não listado acima' },
     { id: 'nao-sei', label: 'Ainda não decidi', sub: 'Vou escolher com meu médico' },
   ];
+  // Concentrações reais por tipo de medicamento
+  const concentracoesTirz = [
+    { val: '5mg/ml',  label: '5 mg/ml',  sub: '2,5mg = 50 UI (0,5ml) • 5mg = 100 UI (1ml)' },
+    { val: '10mg/ml', label: '10 mg/ml', sub: '5mg = 50 UI (0,5ml) • 10mg = 100 UI (1ml)' },
+    { val: '15mg/ml', label: '15 mg/ml', sub: '7,5mg = 50 UI (0,5ml) • 15mg = 100 UI (1ml)' },
+    { val: '20mg/ml', label: '20 mg/ml', sub: '10mg = 50 UI (0,5ml) • 20mg = 100 UI (1ml)' },
+    { val: '25mg/ml', label: '25 mg/ml', sub: '12,5mg = 50 UI (0,5ml) • 25mg = 100 UI (1ml)' },
+    { val: '30mg/ml', label: '30 mg/ml', sub: '15mg = 50 UI (0,5ml) • 30mg = 100 UI (1ml)' },
+    { val: 'nao-sei', label: 'Não sei / Outra', sub: 'Vou verificar com meu médico ou farmácia' },
+  ];
+  const concentracoesSema = [
+    { val: '0,5mg/ml', label: '0,5 mg/ml', sub: '0,25mg = 50 UI (0,5ml) • 0,5mg = 100 UI (1ml)' },
+    { val: '1mg/ml',   label: '1 mg/ml',   sub: '0,5mg = 50 UI (0,5ml) • 1mg = 100 UI (1ml)' },
+    { val: '2mg/ml',   label: '2 mg/ml',   sub: '1mg = 50 UI (0,5ml) • 2mg = 100 UI (1ml)' },
+    { val: '3mg/ml',   label: '3 mg/ml',   sub: '1,5mg = 50 UI (0,5ml) • 3mg = 100 UI (1ml)' },
+    { val: '5mg/ml',   label: '5 mg/ml',   sub: '2,5mg = 50 UI (0,5ml) • 5mg = 100 UI (1ml)' },
+    { val: 'nao-sei',  label: 'Não sei / Outra', sub: 'Vou verificar com meu médico ou farmácia' },
+  ];
+  const isSemaglutida = ['semaglutida-generica'].includes(dados.medicamento);
+  const concentracoesAtivas = isSemaglutida ? concentracoesSema : concentracoesTirz;
+
   const doses = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Dose personalizada', 'Ainda não sei minha dose'];
   const objetivos = [
     { id: 'saude', label: 'Melhorar minha saúde geral', iconName: 'heart' },
@@ -2217,8 +2292,53 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 4: Dose ── */
+  /* ── Step 4: Concentração da ampola ── */
   if (step === 4) return (
+    <Wrap>
+      <OBHeader title="Qual a concentração da sua ampola?" subtitle="Verifique no frasco ou na receita médica" />
+      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
+        {/* Dica visual */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(196,136,90,0.12), rgba(196,136,90,0.05))', borderRadius: 14, padding: '12px 14px', border: '1px solid rgba(196,136,90,0.25)', display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 4 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p style={{ color: 'var(--brown-light)', fontSize: 12.5, margin: 0, lineHeight: 1.5 }}>
+            A concentração fica impressa no frasco. Exemplo: <strong style={{ color: 'var(--brown)' }}>10mg/ml</strong> significa que cada ml contém 10mg do medicamento.
+          </p>
+        </div>
+        {concentracoesAtivas.map(c => (
+          <button key={c.val} onClick={() => set('concentracaoAmpola', c.val)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 14,
+              border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.1)'}`,
+              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.08)' : 'white',
+              cursor: 'pointer', textAlign: 'left', transition: 'all .15s',
+              boxShadow: dados.concentracaoAmpola === c.val ? '0 2px 10px rgba(196,136,90,0.18)' : '0 1px 3px rgba(45,31,20,0.04)' }}>
+            {/* Ícone de frasco */}
+            <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: dados.concentracaoAmpola === c.val ? 'rgba(196,136,90,0.15)' : '#F5F0EC', transition: 'background .15s' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={dados.concentracaoAmpola === c.val ? 'var(--copper)' : '#9A8070'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="1" width="6" height="4" rx="1.5"/><rect x="5" y="5" width="14" height="18" rx="3"/>
+                <line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>{c.label}</div>
+              {c.val !== 'nao-sei' && <div style={{ fontSize: 11.5, color: '#9A8070', marginTop: 2, fontFamily: 'monospace', letterSpacing: '0.1px' }}>{c.sub}</div>}
+              {c.val === 'nao-sei' && <div style={{ fontSize: 12, color: '#9A8070', marginTop: 2 }}>Você pode ajustar depois no perfil</div>}
+            </div>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+              border: `2px solid ${dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'rgba(45,31,20,0.18)'}`,
+              background: dados.concentracaoAmpola === c.val ? 'var(--copper)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s' }}>
+              {dados.concentracaoAmpola === c.val && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            </div>
+          </button>
+        ))}
+      </div>
+      <OBFooter onPress={next} disabled={!dados.concentracaoAmpola} />
+    </Wrap>
+  );
+
+  /* ── Step 5: Dose ── */
+  if (step === 5) return (
     <Wrap>
       <OBHeader title="Qual é a sua dosagem?" subtitle="Escolha a dose que você usa ou quer usar" />
       <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
@@ -2230,8 +2350,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 5: Data início ── */
-  if (step === 5) return (
+  /* ── Step 6: Data início ── */
+  if (step === 6) return (
     <Wrap>
       <OBHeader title="Quando foi sua primeira aplicação?" subtitle="Calculamos sua janela semanal a partir desta data" />
       <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
@@ -2249,8 +2369,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 6: Sexo ── */
-  if (step === 6) return (
+  /* ── Step 7: Sexo ── */
+  if (step === 7) return (
     <Wrap>
       <OBHeader title="Qual é o seu sexo biológico?" subtitle="Ajuda a personalizar metas e informações de saúde" />
       <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
@@ -2262,8 +2382,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 7: Peso início ── */
-  if (step === 7) return (
+  /* ── Step 8: Peso início ── */
+  if (step === 8) return (
     <Wrap>
       <OBHeader title="Qual era seu peso no início do tratamento?" subtitle="Vamos calcular quanto você já perdeu" />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2273,8 +2393,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 8: Peso atual ── */
-  if (step === 8) return (
+  /* ── Step 9: Peso atual ── */
+  if (step === 9) return (
     <Wrap>
       <OBHeader title="Qual é o seu peso atual?" subtitle="Você pode atualizar sempre na aba Peso" />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2284,8 +2404,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 9: Meta de peso ── */
-  if (step === 9) return (
+  /* ── Step 10: Meta de peso ── */
+  if (step === 10) return (
     <Wrap>
       <OBHeader title="Qual é a sua meta de peso?" subtitle="Seu objetivo personaliza suas projeções" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
@@ -2301,8 +2421,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 10: Objetivos ── */
-  if (step === 10) return (
+  /* ── Step 11: Objetivos ── */
+  if (step === 11) return (
     <Wrap>
       <OBHeader title="Quais são seus objetivos?" subtitle="Selecione todos que se aplicam a você" />
       <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
@@ -2323,8 +2443,8 @@ function OnboardingScreen({ onComplete }) {
     </Wrap>
   );
 
-  /* ── Step 11: Plano Personalizado ── */
-  if (step === 11) {
+  /* ── Step 12: Plano Personalizado ── */
+  if (step === 12) {
     const perda = Math.max(0, dados.pesoAtual - dados.meta).toFixed(1);
     const medLabel = medicamentos.find(m => m.id === dados.medicamento)?.label || dados.medicamento;
     return (
@@ -2339,12 +2459,15 @@ function OnboardingScreen({ onComplete }) {
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--cream-light)' }}>
             {[
               { label: 'Medicamento', valor: medLabel, icon: '💊' },
+              dados.concentracaoAmpola && dados.concentracaoAmpola !== 'nao-sei'
+                ? { label: 'Concentração da ampola', valor: dados.concentracaoAmpola, icon: '🧪' }
+                : null,
               { label: 'Dose atual', valor: dados.dose, icon: '📏' },
               { label: 'Peso no início', valor: `${dados.pesoInicio} kg`, icon: '⚖️' },
               { label: 'Peso atual', valor: `${dados.pesoAtual} kg`, icon: '📍' },
               { label: 'Meta de peso', valor: `${dados.meta} kg`, icon: '🎯' },
               { label: 'Perda esperada', valor: `−${perda} kg`, icon: '📉' },
-            ].map(item => (
+            ].filter(Boolean).map(item => (
               <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'white', borderRadius: 12, border: '1px solid rgba(196,136,90,0.12)', boxShadow: '0 1px 4px rgba(45,31,20,0.05)' }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
                 <span style={{ flex: 1, color: 'var(--brown-light)', fontSize: 14, opacity: 0.75 }}>{item.label}</span>
