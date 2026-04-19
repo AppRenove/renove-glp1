@@ -9,6 +9,8 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --brown:        #2D1F14;
@@ -16,43 +18,130 @@
       --brown-light:  #5A3E28;
       --copper:       #C4885A;
       --copper-light: #DCAA78;
-      --copper-pale:  #F0D5B8;
+      --copper-pale:  #F2DFC8;
       --cream:        #F5EDE3;
-      --cream-light:  #FBF7F3;
-      --red:          #D94F4F;
-      --yellow:       #D4A017;
-      --green:        #4CAF7A;
+      --cream-light:  #FAF6F1;
+      --cream-mid:    #F0E8DE;
+      --red:          #C0392B;
+      --yellow:       #C47A00;
+      --green:        #2E7D52;
+      --green-bg:     #E6F4EC;
+      /* Elevation shadows */
+      --shadow-sm:    0 1px 4px rgba(45,31,20,0.06), 0 2px 8px rgba(45,31,20,0.04);
+      --shadow-md:    0 4px 20px rgba(45,31,20,0.09), 0 1px 4px rgba(45,31,20,0.05);
+      --shadow-lg:    0 8px 32px rgba(45,31,20,0.13), 0 2px 8px rgba(45,31,20,0.06);
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; background: #1a1008; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    body {
+      margin: 0;
+      background: #120D07;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
     #root { width: 100%; max-width: 430px; height: 100dvh; overflow: hidden; position: relative; background: var(--cream-light); }
-    .screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 80px; }
+    .screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 84px; }
     .screen::-webkit-scrollbar { display: none; }
-    .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 76px; background: var(--brown); z-index: 50; display: flex; border-top: 1px solid rgba(196,136,90,0.12); box-shadow: 0 -8px 32px rgba(0,0,0,0.28); }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: none; cursor: pointer; padding: 8px 0; transition: transform .15s; }
-    .nav-btn:active { transform: scale(0.92); }
-    .nav-icon-pill { padding: 6px 14px; border-radius: 14px; transition: background .2s; }
-    .nav-btn.active .nav-icon-pill { background: rgba(196,136,90,0.2); }
-    .nav-btn .label { font-size: 10px; font-weight: 600; letter-spacing: 0.2px; }
-    .nav-btn.active .label { color: var(--copper); }
-    .nav-btn:not(.active) .label { color: rgba(245,237,227,0.35); }
-    .card { background: white; border-radius: 18px; padding: 16px; box-shadow: 0 2px 16px rgba(45,31,20,0.07), 0 1px 3px rgba(45,31,20,0.05); border: 1px solid rgba(45,31,20,0.04); }
-    .btn-primary { background: linear-gradient(135deg, var(--copper) 0%, #B8753D 100%); color: white; border: none; border-radius: 14px; padding: 14px 24px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; letter-spacing: 0.2px; transition: opacity .15s, transform .1s; box-shadow: 0 4px 14px rgba(196,136,90,0.35); }
-    .btn-primary:active { opacity: 0.88; transform: scale(0.98); }
-    .btn-outline { background: transparent; color: var(--copper); border: 1.5px solid var(--copper); border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .header-grad { background: linear-gradient(160deg, #1E1108 0%, var(--brown) 40%, var(--brown-mid) 100%); }
-    input, select { outline: none; }
-    input:focus, select:focus { border-color: var(--copper) !important; }
-    .chat-bubble-rê { background: white; border-radius: 18px 18px 18px 4px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
-    .chat-bubble-user { background: var(--copper); color: white; border-radius: 18px 18px 4px 18px; }
-    .pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .semaforo-verde  { background: #E8F8EE; color: #2E7D52; }
-    .semaforo-amarelo { background: #FFF8E0; color: #8A6400; }
-    .semaforo-vermelho { background: #FDECEA; color: #B71C1C; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 76px;
+      background: linear-gradient(180deg, #251608 0%, #1A0E04 100%);
+      z-index: 50; display: flex;
+      border-top: 1px solid rgba(196,136,90,0.15);
+      box-shadow: 0 -12px 40px rgba(0,0,0,0.35);
+    }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; padding: 8px 0; transition: transform .15s; }
+    .nav-btn:active { transform: scale(0.88); }
+    .nav-icon-pill { padding: 5px 16px; border-radius: 12px; transition: background .2s; }
+    .nav-btn.active .nav-icon-pill { background: rgba(196,136,90,0.18); }
+    .nav-btn .label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; font-family: 'Inter', sans-serif; }
+    .nav-btn.active .label { color: var(--copper-light); }
+    .nav-btn:not(.active) .label { color: rgba(245,237,227,0.3); }
+
+    /* ── Cards ── */
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(45,31,20,0.055);
+    }
+    .card-elevated {
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(45,31,20,0.06);
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #C98B5E 0%, #A86535 100%);
+      color: white; border: none; border-radius: 16px;
+      padding: 15px 24px; font-size: 15px; font-weight: 700;
+      cursor: pointer; width: 100%; letter-spacing: 0.15px;
+      transition: opacity .15s, transform .1s, box-shadow .15s;
+      box-shadow: 0 4px 16px rgba(168,101,53,0.4), 0 1px 3px rgba(168,101,53,0.3);
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(168,101,53,0.45); }
+    .btn-primary:active { opacity: 0.9; transform: scale(0.985); box-shadow: 0 2px 8px rgba(168,101,53,0.3); }
+    .btn-outline {
+      background: transparent; color: var(--copper);
+      border: 1.5px solid rgba(196,136,90,0.6);
+      border-radius: 14px; padding: 11px 20px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s; font-family: 'Inter', sans-serif;
+    }
+    .btn-outline:active { background: rgba(196,136,90,0.08); }
+
+    /* ── Header gradient ── */
+    .header-grad {
+      background: linear-gradient(160deg, #1A0D05 0%, #2D1F14 50%, #3A2418 100%);
+    }
+
+    /* ── Inputs ── */
+    input, select, textarea { outline: none; font-family: 'Inter', sans-serif; }
+    input:focus, select:focus { border-color: var(--copper) !important; box-shadow: 0 0 0 3px rgba(196,136,90,0.12) !important; }
+    input::placeholder { color: #B8A898; }
+
+    /* ── Pills ── */
+    .pill {
+      display: inline-flex; align-items: center;
+      padding: 4px 11px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1px;
+    }
+
+    /* ── Chat bubbles ── */
+    .chat-bubble-rê { background: white; border-radius: 20px 20px 20px 4px; box-shadow: var(--shadow-sm); }
+    .chat-bubble-user { background: linear-gradient(135deg, var(--copper), #A86535); color: white; border-radius: 20px 20px 4px 20px; }
+
+    /* ── Severity buttons in Diário ── */
+    .sev-btn {
+      flex: 1; padding: 9px 2px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      border: 1.5px solid transparent; transition: all .15s;
+      font-family: 'Inter', sans-serif; letter-spacing: 0.1px;
+    }
+    .sev-btn.none-sel   { background: var(--copper-pale); color: var(--brown-light); border-color: rgba(196,136,90,0.4); }
+    .sev-btn.leve-sel   { background: #FFF3CD; color: #8A5E00; border-color: rgba(212,160,23,0.5); }
+    .sev-btn.mod-sel    { background: #FFE4C4; color: #8B4513; border-color: rgba(196,120,60,0.5); }
+    .sev-btn.intense-sel{ background: #FDECEA; color: var(--red); border-color: rgba(192,57,43,0.4); }
+    .sev-btn.unsel      { background: #F5F0EB; color: #9A8070; border-color: transparent; }
+
+    /* ── Status indicators ── */
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── Animations ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
     .pulse { animation: pulse 2s infinite; }
-    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    .slide-up { animation: slideUp .35s ease both; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .slide-up { animation: slideUp .3s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .fade-in { animation: fadeIn .25s ease both; }
     @keyframes bellRing { 0%,100%{transform:rotate(0)} 20%{transform:rotate(12deg)} 40%{transform:rotate(-12deg)} 60%{transform:rotate(6deg)} 80%{transform:rotate(-4deg)} }
     .bell-ring { animation: bellRing .6s ease; }
   </style>
@@ -121,6 +210,16 @@ function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }) {
     'target-goal': <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
     'stethoscope': <><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></>,
     'shirt': <><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></>,
+    'flame': <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="currentColor" stroke="none"/>,
+    'droplets': <><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></>,
+    'ruler': <><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></>,
+    'clipboard': <><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>,
+    'dna': <><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M22 9c-4.29 4.774-9.164 1.45-12.197 4.521"/><path d="M2 9c6.667 6 13.333 0 20 6"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M2 15.5V9"/><path d="M22 15.5V9"/><path d="M9 2c1.253 2.798 1.986 5.944 2 9"/></>,
+    'check-circle': <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+    'trending-up': <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
+    'info': <><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></>,
+    'shield': <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+    'award': <><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -212,8 +311,8 @@ function HomeScreen({ setTab, perfil }) {
       <div className="header-grad px-5 pt-12 pb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>{saudacao} 🌿</p>
-            <h1 style={{ color: 'var(--cream)', fontSize: 24, fontWeight: 700, margin: 0 }}>{perfil?.nome || 'Guilherme'}</h1>
+            <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13 }}>{saudacao}</p>
+            <h1 style={{ color: 'var(--cream)', fontSize: 26, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{perfil?.nome || 'Guilherme'}</h1>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button onClick={() => setTab('notificacoes')} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(196,136,90,0.15)', border: '1.5px solid rgba(196,136,90,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -266,35 +365,38 @@ function HomeScreen({ setTab, perfil }) {
         )}
 
         {/* Próxima aplicação */}
-        <div className="card slide-up" style={{ borderLeft: '4px solid var(--copper)' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="syringe" size={17} color="var(--copper)" strokeWidth={2} />
+        <div className="card slide-up" style={{ borderLeft: '4px solid var(--copper)', borderRadius: '0 20px 20px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--copper-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="syringe" size={18} color="var(--copper)" strokeWidth={2} />
               </div>
-              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Próxima picadinha</span>
+              <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, letterSpacing: '-0.2px' }}>Próxima picadinha</span>
             </div>
-            <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)', fontSize: 11 }}>{perfil?.dose || '5mg'}</span>
+            <span className="pill" style={{ background: 'var(--copper-pale)', color: 'var(--brown-light)' }}>{perfil?.dose || '5mg'}</span>
           </div>
-          <div className="flex items-end justify-between">
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--copper)' }}>{diasRestantes} dias</div>
-              <div style={{ color: '#8A7060', fontSize: 13 }}>{proxDia}, {proxDataStr}</div>
+              <div style={{ fontSize: 38, fontWeight: 900, color: 'var(--copper)', letterSpacing: '-1px', lineHeight: 1 }}>{diasRestantes}<span style={{ fontSize: 18, fontWeight: 600, marginLeft: 4 }}>dias</span></div>
+              <div style={{ color: '#9A8070', fontSize: 13, marginTop: 4, fontWeight: 500 }}>{proxDia}, {proxDataStr}</div>
             </div>
-            <button className="btn-outline" style={{ width: 'auto', padding: '10px 18px', fontSize: 13 }} onClick={() => setTab('planejador')}>
+            <button className="btn-outline" style={{ width: 'auto', padding: '9px 16px', fontSize: 13, borderRadius: 12 }} onClick={() => setTab('planejador')}>
               Ver planejador
             </button>
           </div>
-          {/* Barra de progresso da semana */}
-          <div className="mt-3">
-            <div style={{ display: 'flex', gap: 4 }}>
-              {['S','T','Q','Q','S','S','D'].map((d, i) => (
+          {/* Progresso da semana */}
+          <div style={{ display: 'flex', gap: 5 }}>
+            {['D','S','T','Q','Q','S','S'].map((d, i) => {
+              const diaSemana = new Date().getDay();
+              const passado = i < diaSemana;
+              const hoje = i === diaSemana;
+              return (
                 <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 9, color: '#9A8070', marginBottom: 3 }}>{d}</div>
-                  <div style={{ height: 6, borderRadius: 3, background: i < 4 ? 'var(--copper)' : (i === 4 ? 'var(--copper-pale)' : '#EEE8E0') }} />
+                  <div style={{ fontSize: 9, color: hoje ? 'var(--copper)' : '#B0A090', marginBottom: 4, fontWeight: hoje ? 700 : 400 }}>{d}</div>
+                  <div style={{ height: 5, borderRadius: 3, background: passado ? 'var(--copper)' : hoje ? 'var(--copper-light)' : '#EAE4DC', transition: 'background .3s' }} />
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -318,9 +420,9 @@ function HomeScreen({ setTab, perfil }) {
             pesoSemana = pesos.some(p => new Date(p.data) >= umaSemanaAtras);
           } catch {}
           const checks = [
-            { label: 'Diário de hoje', feito: diarioHoje, tab: 'diario', icon: '📔' },
-            { label: 'Aplicação semanal', feito: aplicacaoSemana, tab: 'planejador', icon: '💉' },
-            { label: 'Peso desta semana', feito: pesoSemana, tab: 'peso', icon: '⚖️' },
+            { label: 'Diário de hoje',    feito: diarioHoje,    tab: 'diario',     iconName: 'clipboard' },
+            { label: 'Aplicação semanal', feito: aplicacaoSemana, tab: 'planejador', iconName: 'syringe' },
+            { label: 'Peso desta semana', feito: pesoSemana,    tab: 'peso',       iconName: 'scale' },
           ];
           const total = checks.filter(c => c.feito).length;
           return (
@@ -332,12 +434,24 @@ function HomeScreen({ setTab, perfil }) {
               <div className="flex flex-col gap-2">
                 {checks.map(c => (
                   <button key={c.label} onClick={() => setTab(c.tab)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 11,
-                      background: c.feito ? '#E8F8EE' : '#F8F4F0', border: `1.5px solid ${c.feito ? '#2E7D52' : 'rgba(45,31,20,0.08)'}`,
-                      cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}>
-                    <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{c.feito ? '✅' : c.icon}</span>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: c.feito ? '#2E7D52' : 'var(--brown)' }}>{c.label}</span>
-                    {!c.feito && <span style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 600 }}>Fazer →</span>}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 14,
+                      background: c.feito ? '#EBF7F1' : 'white', border: `1.5px solid ${c.feito ? 'rgba(46,125,82,0.25)' : 'rgba(45,31,20,0.07)'}`,
+                      cursor: 'pointer', textAlign: 'left', transition: 'all .15s',
+                      boxShadow: c.feito ? 'none' : '0 1px 4px rgba(45,31,20,0.04)' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      background: c.feito ? 'rgba(46,125,82,0.12)' : 'var(--cream-mid)' }}>
+                      {c.feito
+                        ? <Icon name="check-circle" size={18} color="#2E7D52" strokeWidth={2.5} />
+                        : <Icon name={c.iconName} size={17} color="var(--copper)" strokeWidth={1.8} />
+                      }
+                    </div>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: c.feito ? '#2E7D52' : 'var(--brown)', letterSpacing: '-0.1px' }}>{c.label}</span>
+                    {!c.feito && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(196,136,90,0.1)', borderRadius: 8, padding: '4px 10px' }}>
+                        <span style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 700 }}>Fazer</span>
+                        <Icon name="arrow-right" size={12} color="var(--copper)" strokeWidth={2.5} />
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -385,7 +499,7 @@ function HomeScreen({ setTab, perfil }) {
         {/* Peso */}
         <div className="card">
           <div className="flex items-center justify-between mb-3">
-            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Evolução de peso ⚖️</div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Evolução de peso</div>
             <button onClick={() => setTab('peso')} style={{ fontSize: 12, color: 'var(--copper)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Ver tudo →</button>
           </div>
           <div className="flex items-baseline gap-2 mb-3">
@@ -505,7 +619,7 @@ function PlanejadorScreen({ perfil }) {
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Planejador</h2>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 4, letterSpacing: '-0.3px' }}>Planejador</h2>
         <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Sua picadinha semanal</p>
       </div>
 
@@ -717,9 +831,9 @@ function DiarioScreen() {
   const maxSintoma = Math.max(...Object.values(sintomas));
   const semaforo = maxSintoma <= 1 ? 'verde' : maxSintoma === 2 ? 'amarelo' : 'vermelho';
   const msgSemaforo = {
-    verde: { cor: 'var(--green)', bg: '#E8F8EE', txt: 'Tudo certo! Continue hidratando bem e priorizando proteína 💚', emoji: '🟢' },
-    amarelo: { cor: 'var(--yellow)', bg: '#FFF8E0', txt: 'Cuide-se! Coma devagar, em pequenas porções, e descanse quando precisar 💛', emoji: '🟡' },
-    vermelho: { cor: 'var(--red)', bg: '#FDECEA', txt: 'Sintomas intensos — considere falar com seu médico ❤️', emoji: '🔴' },
+    verde: { cor: '#2E7D52', bg: '#EBF7F1', txt: 'Tudo certo! Continue hidratando bem e priorizando proteína.', dot: '#4CAF7A' },
+    amarelo: { cor: '#8A5E00', bg: '#FFF8E0', txt: 'Cuide-se! Coma devagar, em pequenas porções e descanse quando precisar.', dot: '#D4A017' },
+    vermelho: { cor: '#B71C1C', bg: '#FDECEA', txt: 'Sintomas intensos — considere falar com seu médico.', dot: '#D94F4F' },
   };
   const s = msgSemaforo[semaforo];
 
@@ -733,14 +847,14 @@ function DiarioScreen() {
       <div className="header-grad px-5 pt-12 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Diário de Sintomas 📔</h2>
+            <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 4, letterSpacing: '-0.3px' }}>Diário de Sintomas</h2>
             <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Hoje, {dataStr}</p>
           </div>
           {streak > 0 && (
-            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 14px' }}>
-              <div style={{ fontSize: 20 }}>🔥</div>
-              <div style={{ color: 'var(--copper-light)', fontWeight: 800, fontSize: 16, lineHeight: 1 }}>{streak}</div>
-              <div style={{ color: 'rgba(245,237,227,0.6)', fontSize: 10 }}>dias</div>
+            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: '8px 14px', border: '1px solid rgba(220,170,120,0.2)' }}>
+              <Icon name="flame" size={20} color="var(--copper-light)" strokeWidth={0} />
+              <div style={{ color: 'var(--copper-light)', fontWeight: 800, fontSize: 17, lineHeight: 1.1 }}>{streak}</div>
+              <div style={{ color: 'rgba(245,237,227,0.5)', fontSize: 10, letterSpacing: '0.3px' }}>dias</div>
             </div>
           )}
         </div>
@@ -748,12 +862,14 @@ function DiarioScreen() {
 
       <div className="px-4 py-4 flex flex-col gap-4">
         {/* Semáforo */}
-        <div style={{ background: s.bg, borderRadius: 14, padding: '14px 16px', border: `1.5px solid ${s.cor}30` }}>
-          <div className="flex items-center gap-3">
-            <span style={{ fontSize: 28 }}>{s.emoji}</span>
+        <div style={{ background: s.bg, borderRadius: 16, padding: '14px 16px', border: `1.5px solid ${s.dot}30` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: `${s.dot}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1.5px solid ${s.dot}30` }}>
+              <div className="status-dot" style={{ background: s.dot, boxShadow: `0 0 8px ${s.dot}60` }} />
+            </div>
             <div>
-              <div style={{ fontWeight: 700, color: s.cor, fontSize: 14 }}>Status de hoje</div>
-              <div style={{ fontSize: 13, color: s.cor, opacity: 0.85 }}>{s.txt}</div>
+              <div style={{ fontWeight: 700, color: s.cor, fontSize: 13, letterSpacing: '0.1px' }}>Status de hoje</div>
+              <div style={{ fontSize: 13, color: s.cor, opacity: 0.8, marginTop: 2, lineHeight: 1.4 }}>{s.txt}</div>
             </div>
           </div>
         </div>
@@ -762,27 +878,23 @@ function DiarioScreen() {
         <div className="card">
           <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 14 }}>Como você está?</div>
           <div className="flex flex-col gap-4">
-            {listaSintomas.map(({ key, label, emoji }) => (
+            {listaSintomas.map(({ key, label }) => (
               <div key={key}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span style={{ fontSize: 18 }}>{emoji}</span>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--copper)', flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brown)' }}>{label}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {niveis.map((n, i) => (
-                    <button key={n} onClick={() => setSintomas(prev => ({ ...prev, [key]: i }))}
-                      style={{
-                        flex: 1, padding: '8px 2px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none',
-                        background: sintomas[key] === i
-                          ? (i === 0 ? '#E8F8EE' : i === 1 ? '#FFF8E0' : i === 2 ? '#FFF0D0' : '#FDECEA')
-                          : '#F5F0EC',
-                        color: sintomas[key] === i
-                          ? (i === 0 ? 'var(--green)' : i === 1 ? 'var(--yellow)' : i === 2 ? '#C47A00' : 'var(--red)')
-                          : '#9A8070',
-                        outline: sintomas[key] === i ? '2px solid currentColor' : 'none',
-                        outlineOffset: '-2px',
-                      }}>{n}</button>
-                  ))}
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {niveis.map((n, i) => {
+                    const sel = sintomas[key] === i;
+                    const cls = sel
+                      ? (i === 0 ? 'sev-btn none-sel' : i === 1 ? 'sev-btn leve-sel' : i === 2 ? 'sev-btn mod-sel' : 'sev-btn intense-sel')
+                      : 'sev-btn unsel';
+                    return (
+                      <button key={n} onClick={() => setSintomas(prev => ({ ...prev, [key]: i }))}
+                        className={cls}>{n}</button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -791,7 +903,10 @@ function DiarioScreen() {
 
         {/* Hidratação */}
         <div className="card">
-          <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>💧 Hidratação hoje</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Icon name="droplets" size={18} color="var(--copper)" strokeWidth={2} />
+            <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Hidratação hoje</span>
+          </div>
           <div className="flex items-center gap-4">
             <button onClick={() => setHydra(h => Math.max(0, +(h - 0.25).toFixed(2)))}
               style={{ width: 40, height: 40, borderRadius: '50%', background: '#F5F0EC', border: 'none', fontSize: 20, cursor: 'pointer', fontWeight: 700, color: 'var(--brown-light)' }}>−</button>
@@ -945,7 +1060,7 @@ function PesoScreen({ perfil }) {
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-4">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 12 }}>Corpo & Composição</h2>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 12, letterSpacing: '-0.3px' }}>Corpo & Composição</h2>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.18)', borderRadius: 12, padding: 4 }}>
           {[['peso','⚖️ Peso'],['medidas','📏 Medidas']].map(([id, lbl]) => (
             <button key={id} onClick={() => setAba(id)}
@@ -975,7 +1090,7 @@ function PesoScreen({ perfil }) {
           {/* Composição estimada */}
           {kgPerdidos >= 1 && (
             <div className="card" style={{ background: composSinal !== 'neutro' ? composCfg[composSinal].bg : undefined }}>
-              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>🧬 Composição estimada</div>
+              <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Composição estimada</div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
                 <div style={{ flex: 1, background: 'rgba(196,136,90,0.1)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--copper)' }}>{estimGordura}kg</div>
@@ -1096,7 +1211,7 @@ function PesoScreen({ perfil }) {
 
           {/* Registrar medidas */}
           <div className="card">
-            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>📏 Registrar medidas de hoje</div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 4 }}>Registrar medidas de hoje</div>
             <p style={{ color: '#8A7060', fontSize: 13, margin: '0 0 14px' }}>Use uma fita métrica. Registre ao menos 1x por mês.</p>
             {medidaSalva ? (
               <div style={{ background: '#E8F8EE', border: '1.5px solid var(--green)', borderRadius: 10, padding: '14px', textAlign: 'center', color: '#2E7D52', fontWeight: 700 }}>✅ Medidas salvas!</div>
@@ -1104,10 +1219,10 @@ function PesoScreen({ perfil }) {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   {[
-                    { key: 'cintura', label: '🎯 Cintura (cm)', ph: 'Ex: 92' },
-                    { key: 'quadril', label: '🔵 Quadril (cm)', ph: 'Ex: 108' },
-                    { key: 'braco',   label: '💪 Braço (cm)',   ph: 'Ex: 34' },
-                    { key: 'coxa',    label: '🦵 Coxa (cm)',    ph: 'Ex: 58' },
+                    { key: 'cintura', label: 'Cintura (cm)', ph: 'Ex: 92' },
+                    { key: 'quadril', label: 'Quadril (cm)', ph: 'Ex: 108' },
+                    { key: 'braco',   label: 'Braço (cm)',   ph: 'Ex: 34' },
+                    { key: 'coxa',    label: 'Coxa (cm)',    ph: 'Ex: 58' },
                   ].map(({ key, label, ph }) => (
                     <div key={key}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--brown)', marginBottom: 5 }}>{label}</div>
@@ -1124,12 +1239,12 @@ function PesoScreen({ perfil }) {
 
           {/* Guia */}
           <div className="card" style={{ background: 'var(--copper-pale)' }}>
-            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 8 }}>📋 Como medir corretamente</div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 8 }}>Como medir corretamente</div>
             {[
-              ['🎯 Cintura','Na parte mais estreita do abdômen, acima do umbigo'],
-              ['🔵 Quadril','Na parte mais larga dos quadris e glúteos'],
-              ['💪 Braço','No meio do braço direito, entre ombro e cotovelo'],
-              ['🦵 Coxa','Na parte mais larga da coxa direita'],
+              ['Cintura','Na parte mais estreita do abdômen, acima do umbigo'],
+              ['Quadril','Na parte mais larga dos quadris e glúteos'],
+              ['Braço','No meio do braço direito, entre ombro e cotovelo'],
+              ['Coxa','Na parte mais larga da coxa direita'],
             ].map(([local, inst]) => (
               <div key={local} style={{ marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, color: 'var(--brown)', fontSize: 13 }}>{local}: </span>
@@ -1140,13 +1255,13 @@ function PesoScreen({ perfil }) {
 
           {/* Tips proteção muscular */}
           <div className="card" style={{ borderLeft: '4px solid var(--copper)' }}>
-            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 10 }}>💪 Protegendo seus músculos no GLP-1</div>
+            <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 14, marginBottom: 10 }}>Protegendo seus músculos no GLP-1</div>
             {[
-              '🥩 Meta: 1,5–2g de proteína por kg de peso corporal por dia',
-              '🏋️ Musculação ou treino resistido 2–3x por semana',
-              '😴 Durma 7–9h — o músculo se regenera no sono',
-              '💊 Creatina pode ajudar na preservação — consulte seu médico',
-              '🚶 Caminhadas diárias também contam para manter massa magra',
+              'Meta: 1,5–2g de proteína por kg de peso corporal por dia',
+              'Musculação ou treino resistido 2–3x por semana',
+              'Durma 7–9h — o músculo se regenera no sono',
+              'Creatina pode ajudar na preservação — consulte seu médico',
+              'Caminhadas diárias também contam para manter massa magra',
             ].map(tip => (
               <div key={tip} style={{ fontSize: 13, color: '#6A5A4A', marginBottom: 7, lineHeight: 1.4 }}>{tip}</div>
             ))}
@@ -1208,7 +1323,7 @@ function CalculadoraScreen() {
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Calculadora Corporal 🧮</h2>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 4, letterSpacing: '-0.3px' }}>Calculadora Corporal</h2>
         <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Método da Marinha dos EUA</p>
       </div>
 
@@ -1483,9 +1598,11 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
   };
 
   const fieldStyle = {
-    width: '100%', padding: '12px 14px', borderRadius: 12,
-    border: '1.5px solid rgba(45,31,20,0.18)', fontSize: 15,
-    color: 'var(--brown)', background: 'white', boxSizing: 'border-box',
+    width: '100%', padding: '13px 16px', borderRadius: 14,
+    border: '1.5px solid rgba(45,31,20,0.12)', fontSize: 15,
+    color: 'var(--brown)', background: '#FDFAF7', boxSizing: 'border-box',
+    fontFamily: "'Inter', sans-serif", fontWeight: 500,
+    transition: 'border-color .2s, box-shadow .2s',
   };
   const labelStyle = { fontWeight: 600, color: 'var(--brown)', fontSize: 13, marginBottom: 6, display: 'block' };
 
@@ -1683,7 +1800,7 @@ function NotificacoesScreen({ perfil }) {
   return (
     <div className="screen">
       <div className="header-grad px-5 pt-12 pb-6">
-        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 4 }}>Notificações 🔔</h2>
+        <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 4, letterSpacing: '-0.3px' }}>Notificações</h2>
         <p style={{ color: 'rgba(245,237,227,0.6)', fontSize: 13, margin: 0 }}>Lembretes da sua jornada</p>
       </div>
 
