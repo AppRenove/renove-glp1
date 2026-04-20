@@ -23,13 +23,21 @@
       --cream-light:  #FAF6F1;
       --cream-mid:    #F0E8DE;
       --red:          #C0392B;
+      --red-bg:       #FDECEA;
       --yellow:       #C47A00;
+      --yellow-bg:    #FFF8E0;
       --green:        #2E7D52;
       --green-bg:     #E6F4EC;
+      --teal:         #2F6F73;
+      --teal-bg:      #E8F4F3;
+      --ink-muted:    #8A7060;
+      --line:         rgba(45,31,20,0.09);
+      --radius-card:  16px;
+      --radius-ui:    12px;
       /* Elevation shadows */
-      --shadow-sm:    0 1px 4px rgba(45,31,20,0.06), 0 2px 8px rgba(45,31,20,0.04);
-      --shadow-md:    0 4px 20px rgba(45,31,20,0.09), 0 1px 4px rgba(45,31,20,0.05);
-      --shadow-lg:    0 8px 32px rgba(45,31,20,0.13), 0 2px 8px rgba(45,31,20,0.06);
+      --shadow-sm:    0 1px 3px rgba(45,31,20,0.05), 0 1px 6px rgba(45,31,20,0.03);
+      --shadow-md:    0 6px 18px rgba(45,31,20,0.075), 0 1px 2px rgba(45,31,20,0.04);
+      --shadow-lg:    0 14px 36px rgba(45,31,20,0.14), 0 3px 10px rgba(45,31,20,0.06);
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -46,14 +54,14 @@
     /* ── Bottom Nav ── */
     .bottom-nav {
       position: absolute; bottom: 0; left: 0; right: 0; height: 76px;
-      background: linear-gradient(180deg, #251608 0%, #1A0E04 100%);
+      background: linear-gradient(180deg, #21150C 0%, #160C05 100%);
       z-index: 50; display: flex;
       border-top: 1px solid rgba(196,136,90,0.15);
-      box-shadow: 0 -12px 40px rgba(0,0,0,0.35);
+      box-shadow: 0 -10px 32px rgba(0,0,0,0.28);
     }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; padding: 8px 0; transition: transform .15s; }
     .nav-btn:active { transform: scale(0.88); }
-    .nav-icon-pill { padding: 5px 16px; border-radius: 12px; transition: background .2s; }
+    .nav-icon-pill { padding: 5px 16px; border-radius: var(--radius-ui); transition: background .2s; }
     .nav-btn.active .nav-icon-pill { background: rgba(196,136,90,0.18); }
     .nav-btn .label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; font-family: 'Inter', sans-serif; }
     .nav-btn.active .label { color: var(--copper-light); }
@@ -62,23 +70,23 @@
     /* ── Cards ── */
     .card {
       background: white;
-      border-radius: 20px;
+      border-radius: var(--radius-card);
       padding: 18px;
       box-shadow: var(--shadow-md);
-      border: 1px solid rgba(45,31,20,0.055);
+      border: 1px solid var(--line);
     }
     .card-elevated {
       background: white;
-      border-radius: 20px;
+      border-radius: var(--radius-card);
       padding: 18px;
       box-shadow: var(--shadow-lg);
-      border: 1px solid rgba(45,31,20,0.06);
+      border: 1px solid var(--line);
     }
 
     /* ── Buttons ── */
     .btn-primary {
       background: linear-gradient(135deg, #C98B5E 0%, #A86535 100%);
-      color: white; border: none; border-radius: 16px;
+      color: white; border: none; border-radius: var(--radius-ui);
       padding: 15px 24px; font-size: 15px; font-weight: 700;
       cursor: pointer; width: 100%; letter-spacing: 0.15px;
       transition: opacity .15s, transform .1s, box-shadow .15s;
@@ -90,7 +98,7 @@
     .btn-outline {
       background: transparent; color: var(--copper);
       border: 1.5px solid rgba(196,136,90,0.6);
-      border-radius: 14px; padding: 11px 20px;
+      border-radius: var(--radius-ui); padding: 11px 20px;
       font-size: 14px; font-weight: 600; cursor: pointer;
       transition: all .15s; font-family: 'Inter', sans-serif;
     }
@@ -117,8 +125,8 @@
     }
 
     /* ── Chat bubbles ── */
-    .chat-bubble-rê { background: white; border-radius: 20px 20px 20px 4px; box-shadow: var(--shadow-sm); }
-    .chat-bubble-user { background: linear-gradient(135deg, var(--copper), #A86535); color: white; border-radius: 20px 20px 4px 20px; }
+    .chat-bubble-rê { background: white; border-radius: 16px 16px 16px 5px; box-shadow: var(--shadow-sm); }
+    .chat-bubble-user { background: linear-gradient(135deg, var(--copper), #A86535); color: white; border-radius: 16px 16px 5px 16px; }
 
     /* ── Severity buttons in Diário ── */
     .sev-btn {
@@ -254,6 +262,10 @@ function hoje() {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+// Formata Date local como "YYYY-MM-DD" sem converter para UTC
+function toLocalISODate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
 // Diferença em dias inteiros entre duas Dates
 function diffDias(a, b) {
   return Math.floor((b - a) / 86400000);
@@ -334,6 +346,47 @@ function calcularDoseFarmaco(totalAmpMg, volumeAmpMl, doseMg, tipoSeringa) {
   };
 }
 
+function extrairDoseMg(dose) {
+  if (dose === null || dose === undefined) return NaN;
+  const match = String(dose).replace(',', '.').match(/[\d.]+/);
+  return match ? parseFloat(match[0]) : NaN;
+}
+
+function getFarmacoConfig(medicamento) {
+  const med = String(medicamento || '').toLowerCase();
+  if (med.includes('sema') || med.includes('ozempic') || med.includes('wegovy') || med.includes('rybelsus')) {
+    return { nome: 'Semaglutida', meiaVidaDias: 7 };
+  }
+  if (med.includes('lira') || med.includes('saxenda') || med.includes('victoza')) {
+    return { nome: 'Liraglutida', meiaVidaDias: 0.55 };
+  }
+  if (med.includes('dula') || med.includes('trulicity')) {
+    return { nome: 'Dulaglutida', meiaVidaDias: 5 };
+  }
+  return { nome: 'Tirzepatida', meiaVidaDias: 5 };
+}
+
+function calcularNivelEstimado(perfil, aplicacoes = [], dataRef = hoje()) {
+  const cfg = getFarmacoConfig(perfil?.medicamento);
+  const dosePadrao = extrairDoseMg(perfil?.dose);
+  const pontos = Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(dataRef);
+    d.setDate(dataRef.getDate() - (7 - i));
+    const soma = aplicacoes.reduce((acc, app) => {
+      const appDate = app.ts ? new Date(app.ts) : parseLocalDate(app.data);
+      if (!appDate || appDate > d) return acc;
+      const dias = Math.max(0, (d - appDate) / 86400000);
+      const dose = extrairDoseMg(app.dose) || dosePadrao || 0;
+      return acc + dose * Math.pow(0.5, dias / cfg.meiaVidaDias);
+    }, 0);
+    return { data: d, valor: soma };
+  });
+  const max = Math.max(1, ...pontos.map(p => p.valor));
+  const atual = pontos[pontos.length - 1]?.valor || 0;
+  const picoPct = Math.min(100, Math.round((atual / max) * 100));
+  return { ...cfg, pontos, max, atual, picoPct };
+}
+
 /* ─── DADOS ───────────────────────────────────────────────── */
 const LOCAIS = ['Abdômen esquerdo', 'Abdômen direito', 'Coxa esquerda', 'Coxa direita', 'Braço esquerdo', 'Braço direito'];
 
@@ -351,13 +404,14 @@ function buildSistemaRe(perfil) {
   const conc = perfil?.concentracaoAmpola && perfil.concentracaoAmpola !== 'nao-sei'
     ? ` Concentração da ampola: ${perfil.concentracaoAmpola}.` : '';
   const totalAmpola = perfil?.totalAmpola ? ` Conteúdo total da ampola: ${perfil.totalAmpola}mg.` : '';
-  const inicio = perfil?.dataInicio ? ` Em tratamento desde ${new Date(perfil.dataInicio).toLocaleDateString('pt-BR')}.` : '';
+  const inicioDate = parseLocalDate(perfil?.dataInicio);
+  const inicio = inicioDate ? ` Em tratamento desde ${inicioDate.toLocaleDateString('pt-BR')}.` : '';
 
   // Calcula número de doses por ampola se tiver as infos
   let dosesPorAmpola = '';
   if (perfil?.totalAmpola && perfil?.dose) {
-    const totalMg = parseFloat(perfil.totalAmpola);
-    const doseMg = parseFloat(perfil.dose);
+    const totalMg = normalizarNumero(perfil.totalAmpola);
+    const doseMg = extrairDoseMg(perfil.dose);
     if (!isNaN(totalMg) && !isNaN(doseMg) && doseMg > 0) {
       const ndoses = Math.floor(totalMg / doseMg);
       dosesPorAmpola = ` A ampola rende aproximadamente ${ndoses} doses de ${doseMg}mg.`;
@@ -481,6 +535,7 @@ function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }) {
     'shirt': <><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></>,
     'flame': <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="currentColor" stroke="none"/>,
     'droplets': <><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></>,
+    'dumbbell': <><path d="M6.5 6.5 17.5 17.5"/><path d="m21 21-3-3"/><path d="m3 3 3 3"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m14.5 5.5 4 4"/><path d="m5.5 14.5 4 4"/></>,
     'ruler': <><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></>,
     'clipboard': <><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>,
     'dna': <><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M22 9c-4.29 4.774-9.164 1.45-12.197 4.521"/><path d="M2 9c6.667 6 13.333 0 20 6"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M2 15.5V9"/><path d="M22 15.5V9"/><path d="M9 2c1.253 2.798 1.986 5.944 2 9"/></>,
@@ -548,7 +603,7 @@ function WeightChart({ dados, meta }) {
           fill={i === dados.length - 1 ? '#C4885A' : 'white'} stroke="#C4885A" strokeWidth="2" />
       ))}
       {/* Labels X — mostrar só início, meio e fim */}
-      {[0, Math.floor(dados.length/2), dados.length-1].map(i => (
+      {[...new Set([0, Math.floor(dados.length/2), dados.length-1])].map(i => (
         <text key={i} x={scaleX(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#9A8070">{dados[i].data}</text>
       ))}
       {/* Labels Y */}
@@ -595,10 +650,11 @@ function ReFAB({ onClick }) {
           <div style={{ position:'absolute', bottom:-6, right:18, width:0, height:0, borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:'6px solid white' }}/>
         </div>
       )}
-      <button onClick={onClick} style={{ width:58, height:58, borderRadius:'50%', border:'none', cursor:'pointer', padding:0, background:'linear-gradient(135deg,var(--copper) 0%,#8B4E1E 100%)', boxShadow:'0 6px 20px rgba(140,74,30,0.45)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform .2s cubic-bezier(.34,1.56,.64,1)' }}
+      <button onClick={onClick} aria-label="Falar com a Rê" style={{ width:58, height:58, borderRadius:'50%', border:'none', cursor:'pointer', padding:0, background:'linear-gradient(135deg,var(--copper) 0%,#8B4E1E 100%)', boxShadow:'0 10px 28px rgba(140,74,30,0.38), 0 2px 8px rgba(45,31,20,0.18)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform .2s cubic-bezier(.34,1.56,.64,1)' }}
         onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
         onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
         <ReHeadIcon size={38} animated />
+        <span style={{ position:'absolute', top:3, right:3, width:11, height:11, borderRadius:'50%', background:'#4CAF7A', border:'2px solid white', boxShadow:'0 0 0 4px rgba(76,175,122,0.12)' }} />
       </button>
     </div>
   );
@@ -807,6 +863,59 @@ function SeringaAnimada({ ui = 0, maxUI = 100, dose }) {
   );
 }
 
+function NivelMedicamentoCard({ nivel, onOpenDiario }) {
+  if (!nivel || !nivel.pontos?.length) return null;
+  const W = 300, H = 96, PAD = 12;
+  const chartW = W - PAD * 2;
+  const chartH = 48;
+  const yBase = PAD + chartH;
+  const pts = nivel.pontos.map((p, i) => {
+    const x = PAD + (i / Math.max(1, nivel.pontos.length - 1)) * chartW;
+    const y = yBase - (p.valor / nivel.max) * chartH;
+    return `${x},${y}`;
+  }).join(' ');
+  const hojeLabel = nivel.atual > 0 ? `${nivel.atual.toFixed(1)}mg estimado` : 'Sem aplicações registradas';
+  const fase = nivel.picoPct >= 70 ? 'pico' : nivel.picoPct >= 35 ? 'meio da semana' : 'queda';
+  const faseTexto = {
+    pico: 'Fase de maior presença do medicamento. Observe enjoo, saciedade e hidratação.',
+    'meio da semana': 'Nível intermediário. Bom momento para notar fome, energia e sintomas.',
+    queda: 'Nível em queda. É comum perceber mais fome perto da próxima dose.',
+  }[fase];
+
+  return (
+    <div className="card" style={{ background: 'linear-gradient(135deg,#fff 0%,#FFF8F0 100%)' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, marginBottom:10 }}>
+        <div>
+          <div style={{ fontWeight:700, color:'var(--brown)', fontSize:15 }}>Nível estimado no corpo</div>
+          <div style={{ color:'var(--ink-muted)', fontSize:12, marginTop:2 }}>{nivel.nome} · meia-vida aprox. {nivel.meiaVidaDias} dias</div>
+        </div>
+        <span className="pill" style={{ background:'var(--copper-pale)', color:'var(--brown-light)' }}>{nivel.picoPct}%</span>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:112, display:'block' }}>
+        <line x1={PAD} y1={yBase} x2={W-PAD} y2={yBase} stroke="#E8DDD2" strokeWidth="2" />
+        <polyline points={pts} fill="none" stroke="var(--copper)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        {nivel.pontos.map((p, i) => {
+          const x = PAD + (i / Math.max(1, nivel.pontos.length - 1)) * chartW;
+          const y = yBase - (p.valor / nivel.max) * chartH;
+          const isLast = i === nivel.pontos.length - 1;
+          return <circle key={i} cx={x} cy={y} r={isLast ? 5 : 3} fill={isLast ? 'var(--brown)' : 'white'} stroke="var(--copper)" strokeWidth="2" />;
+        })}
+        <text x={PAD} y={H - 12} fontSize="10" fill="#9A8070">7 dias atrás</text>
+        <text x={W - PAD} y={H - 12} textAnchor="end" fontSize="10" fill="#9A8070">hoje</text>
+      </svg>
+
+      <div style={{ background:'rgba(196,136,90,0.1)', borderRadius:12, padding:'10px 12px', marginTop:2 }}>
+        <div style={{ fontWeight:800, color:'var(--brown)', fontSize:14 }}>{hojeLabel}</div>
+        <div style={{ color:'#8A7060', fontSize:12, lineHeight:1.45, marginTop:2 }}>{faseTexto}</div>
+      </div>
+      <button onClick={onOpenDiario} style={{ marginTop:10, width:'100%', padding:'10px 12px', borderRadius:10, border:'1.5px solid rgba(196,136,90,0.35)', background:'transparent', color:'var(--copper)', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+        Registrar sintomas de hoje
+      </button>
+    </div>
+  );
+}
+
 /* ─── ANIMAÇÃO DE APLICAÇÃO PASSO A PASSO ───────────────── */
 function ApplicacaoAnimada() {
   const [step, setStep] = React.useState(0);
@@ -878,6 +987,7 @@ function HomeScreen({ setTab, perfil }) {
   const diasSemanaPT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const proxDia = diasSemanaPT[proximaApl.getDay()];
   const proxDataStr = `${proximaApl.getDate().toString().padStart(2,'0')}/${(proximaApl.getMonth()+1).toString().padStart(2,'0')}`;
+  const proteinaMeta = pesoAtual ? Math.round(pesoAtual * 1.5) : 120;
 
   return (
     <div className="screen">
@@ -951,7 +1061,7 @@ function HomeScreen({ setTab, perfil }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 38, fontWeight: 900, color: 'var(--copper)', letterSpacing: '-1px', lineHeight: 1 }}>{diasRestantes}<span style={{ fontSize: 18, fontWeight: 600, marginLeft: 4 }}>dias</span></div>
+              <div style={{ fontSize: 38, fontWeight: 900, color: 'var(--copper)', letterSpacing: '-1px', lineHeight: 1 }}>{diasRestantes}<span style={{ fontSize: 18, fontWeight: 600, marginLeft: 6 }}> dias</span></div>
               <div style={{ color: '#9A8070', fontSize: 13, marginTop: 4, fontWeight: 500 }}>{proxDia}, {proxDataStr}</div>
             </div>
             <button className="btn-outline" style={{ width: 'auto', padding: '9px 16px', fontSize: 13, borderRadius: 12 }} onClick={() => setTab('planejador')}>
@@ -976,9 +1086,14 @@ function HomeScreen({ setTab, perfil }) {
 
         {/* Seu dia de hoje */}
         {(() => {
-          const todayISO = new Date().toISOString().split('T')[0];
+          const todayISO = toLocalISODate();
           let diarioHoje = false;
+          let proteinaHoje = false;
           try { const d = JSON.parse(localStorage.getItem('renove_diario') || '{}'); diarioHoje = !!d[todayISO]; } catch {}
+          try {
+            const d = JSON.parse(localStorage.getItem('renove_diario') || '{}');
+            proteinaHoje = (d[todayISO]?.proteina || 0) >= proteinaMeta;
+          } catch {}
           let aplicacaoSemana = false;
           try {
             const apps = JSON.parse(localStorage.getItem('renove_aplicacoes') || '[]');
@@ -991,10 +1106,11 @@ function HomeScreen({ setTab, perfil }) {
           try {
             const pesos = JSON.parse(localStorage.getItem('renove_pesos') || '[]');
             const umaSemanaAtras = new Date(); umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
-            pesoSemana = pesos.some(p => new Date(p.data) >= umaSemanaAtras);
+            pesoSemana = pesos.some(p => parseLocalDate(p.dataISO) >= umaSemanaAtras);
           } catch {}
           const checks = [
             { label: 'Diário de hoje',    feito: diarioHoje,    tab: 'diario',     iconName: 'clipboard' },
+            { label: 'Proteína do dia',   feito: proteinaHoje,  tab: 'diario',     iconName: 'dumbbell' },
             { label: 'Aplicação semanal', feito: aplicacaoSemana, tab: 'planejador', iconName: 'syringe' },
             { label: 'Peso desta semana', feito: pesoSemana,    tab: 'peso',       iconName: 'scale' },
           ];
@@ -1003,7 +1119,7 @@ function HomeScreen({ setTab, perfil }) {
             <div className="card">
               <div className="flex items-center justify-between mb-3">
                 <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Seu dia de hoje</div>
-                <span className="pill" style={{ background: total === 3 ? '#E8F8EE' : 'var(--copper-pale)', color: total === 3 ? '#2E7D52' : 'var(--brown-light)', fontWeight: 700 }}>{total}/3 ✓</span>
+                <span className="pill" style={{ background: total === checks.length ? '#E8F8EE' : 'var(--copper-pale)', color: total === checks.length ? '#2E7D52' : 'var(--brown-light)', fontWeight: 700 }}>{total}/{checks.length} ✓</span>
               </div>
               <div className="flex flex-col gap-2">
                 {checks.map(c => (
@@ -1070,6 +1186,27 @@ function HomeScreen({ setTab, perfil }) {
           );
         })()}
 
+        {/* Defesa muscular */}
+        <div className="card" style={{ background: 'linear-gradient(135deg,#E8F8EE 0%,#FFFFFF 100%)', borderLeft: '4px solid var(--green)', borderRadius: '0 20px 20px 0' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:10 }}>
+            <div>
+              <div style={{ fontWeight:700, color:'var(--brown)', fontSize:15 }}>Defesa muscular</div>
+              <div style={{ color:'#6A8A72', fontSize:12, marginTop:2 }}>Proteína + força para emagrecer melhor</div>
+            </div>
+            <Icon name="dumbbell" size={24} color="var(--green)" strokeWidth={2.2} />
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            <button onClick={() => setTab('diario')} style={{ background:'rgba(46,125,82,0.09)', border:'1px solid rgba(46,125,82,0.18)', borderRadius:12, padding:'10px', textAlign:'left', cursor:'pointer' }}>
+              <div style={{ color:'var(--green)', fontWeight:900, fontSize:20 }}>{proteinaMeta}g</div>
+              <div style={{ color:'#5D8066', fontSize:11, lineHeight:1.35 }}>meta mínima de proteína hoje</div>
+            </button>
+            <button onClick={() => setTab('peso')} style={{ background:'rgba(196,136,90,0.1)', border:'1px solid rgba(196,136,90,0.22)', borderRadius:12, padding:'10px', textAlign:'left', cursor:'pointer' }}>
+              <div style={{ color:'var(--copper)', fontWeight:900, fontSize:20 }}>2-3x</div>
+              <div style={{ color:'#8A7060', fontSize:11, lineHeight:1.35 }}>treino de força por semana</div>
+            </button>
+          </div>
+        </div>
+
         {/* Peso */}
         <div className="card">
           <div className="flex items-center justify-between mb-3">
@@ -1113,7 +1250,7 @@ function HomeScreen({ setTab, perfil }) {
 }
 
 /* ─── TELA: PLANEJADOR ───────────────────────────────────── */
-function PlanejadorScreen({ perfil }) {
+function PlanejadorScreen({ perfil, setTab }) {
   // ── Aplicações salvas no localStorage ──
   const [aplicacoes, setAplicacoes] = useState(() => {
     try { return JSON.parse(localStorage.getItem('renove_aplicacoes') || '[]'); } catch { return []; }
@@ -1186,7 +1323,7 @@ function PlanejadorScreen({ perfil }) {
   // ── Registrar ──
   const registrar = () => {
     const nova = {
-      data: _hoje.toISOString().split('T')[0],
+      data: toLocalISODate(_hoje),
       local: LOCAIS[localSel],
       dose: doseInput || dosePerfil || '–',
       ts: new Date().toISOString(),
@@ -1213,6 +1350,11 @@ function PlanejadorScreen({ perfil }) {
   );
   // UI para a seringa — arredondado apenas para exibição (1 casa)
   const uiCalc = calcDose ? parseFloat(calcDose.uiDisplay) : null;
+  const nivelMed = calcularNivelEstimado(perfil, aplicacoes, _hojePlan);
+  const doseMgAtiva = extrairDoseMg(_doseAtiva);
+  const totalMgAmpola = normalizarNumero(perfil?.totalAmpola);
+  const doseMaiorQueAmpola = !isNaN(doseMgAtiva) && !isNaN(totalMgAmpola) && totalMgAmpola > 0 && doseMgAtiva > totalMgAmpola;
+  const doseSemCalculo = _doseAtiva && !calcDose && perfil?.totalAmpola && perfil?.volumeMl;
 
   return (
     <div className="screen">
@@ -1274,6 +1416,8 @@ function PlanejadorScreen({ perfil }) {
             ))}
           </div>
         </div>
+
+        <NivelMedicamentoCard nivel={nivelMed} onOpenDiario={() => setTab?.('diario')} />
 
         {/* Rodízio / botão registrar */}
         {aplicacaoSemana ? (
@@ -1341,6 +1485,15 @@ function PlanejadorScreen({ perfil }) {
               ))}
             </div>
             {/* Alerta de excedente de capacidade */}
+            {doseMaiorQueAmpola && (
+              <div style={{ background:'#FDECEA', border:'1.5px solid #C0392B', borderRadius:12, padding:'12px 14px', marginBottom:10, display:'flex', gap:10, alignItems:'flex-start' }}>
+                <span style={{ fontSize:18, lineHeight:1.2 }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#B71C1C', marginBottom:2 }}>Confira a prescrição</div>
+                  <div style={{ fontSize:12, color:'#7A1D1D', lineHeight:1.5 }}>A dose informada parece maior que o total da ampola. Revise os valores antes de aplicar.</div>
+                </div>
+              </div>
+            )}
             {calcDose?.excedente && (
               <div style={{ background:'#FFF8F0', border:'1.5px solid #E65100', borderRadius:12, padding:'12px 14px', marginBottom:10, display:'flex', gap:10, alignItems:'flex-start' }}>
                 <span style={{ fontSize:18, lineHeight:1.2 }}>⚠️</span>
@@ -1350,6 +1503,10 @@ function PlanejadorScreen({ perfil }) {
                 </div>
               </div>
             )}
+            <div style={{ background:'var(--teal-bg)', border:'1px solid rgba(47,111,115,0.22)', borderRadius:12, padding:'10px 12px', marginBottom:10, color:'var(--teal)', fontSize:12, lineHeight:1.45, display:'flex', gap:8, alignItems:'flex-start' }}>
+              <Icon name="shield" size={16} color="var(--teal)" strokeWidth={2.2} />
+              <span>Use este cálculo como apoio. A dose correta e a forma de aplicação devem seguir a orientação do seu médico ou farmácia.</span>
+            </div>
 
             <SeringaAnimada
               ui={calcDose?.excedente ? seringaTipo : uiCalc}
@@ -1369,6 +1526,12 @@ function PlanejadorScreen({ perfil }) {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {doseSemCalculo && (
+          <div style={{ background:'#FFF8E0', border:'1.5px solid #D4A017', borderRadius:14, padding:'14px 16px', color:'#8A5E00', fontSize:13, lineHeight:1.45 }}>
+            Não consegui calcular a UI com os dados atuais. Revise dose, total da ampola e volume em mL.
           </div>
         )}
 
@@ -1448,11 +1611,13 @@ function PlanejadorScreen({ perfil }) {
 }
 
 /* ─── TELA: DIÁRIO ───────────────────────────────────────── */
-function DiarioScreen() {
+function DiarioScreen({ perfil }) {
   const hoje = new Date();
-  const dataISO = hoje.toISOString().split('T')[0];
+  const dataISO = toLocalISODate(hoje);
   const mesesPT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const dataStr = `${hoje.getDate()} de ${mesesPT[hoje.getMonth()]}`;
+  const pesoRef = parseFloat(perfil?.pesoAtual || perfil?.pesoInicio) || 80;
+  const proteinaMeta = Math.round(pesoRef * 1.5);
 
   // Carrega todas as entradas do localStorage
   const [entradas, setEntradas] = useState(() => {
@@ -1465,6 +1630,7 @@ function DiarioScreen() {
     nausea: 0, vomito: 0, constipacao: 0, dor: 0, tontura: 0, local: 0,
   });
   const [hydra, setHydra] = useState(entradaHoje?.hydra || 1.5);
+  const [proteina, setProteina] = useState(entradaHoje?.proteina || 0);
   const [saved, setSaved] = useState(!!entradaHoje);
 
   // Calcula sequência real de dias consecutivos
@@ -1472,7 +1638,7 @@ function DiarioScreen() {
     let streak = 0;
     const d = new Date();
     for (let i = 0; i < 365; i++) {
-      const iso = d.toISOString().split('T')[0];
+      const iso = toLocalISODate(d);
       if (!entradasObj[iso]) break;
       streak++;
       d.setDate(d.getDate() - 1);
@@ -1481,7 +1647,7 @@ function DiarioScreen() {
   };
 
   const salvar = () => {
-    const novas = { ...entradas, [dataISO]: { sintomas, hydra, salvoEm: new Date().toISOString() } };
+    const novas = { ...entradas, [dataISO]: { sintomas, hydra, proteina, salvoEm: new Date().toISOString() } };
     setEntradas(novas);
     localStorage.setItem('renove_diario', JSON.stringify(novas));
     setSaved(true);
@@ -1593,6 +1759,30 @@ function DiarioScreen() {
           </div>
         </div>
 
+        {/* Proteína */}
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Icon name="dumbbell" size={18} color="var(--copper)" strokeWidth={2} />
+            <span style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Proteína hoje</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setProteina(p => Math.max(0, p - 10))}
+              style={{ width: 40, height: 40, borderRadius: '50%', background: '#F5F0EC', border: 'none', fontSize: 20, cursor: 'pointer', fontWeight: 700, color: 'var(--brown-light)' }}>−</button>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: proteina >= proteinaMeta ? 'var(--green)' : 'var(--copper)' }}>{proteina}g</div>
+              <div style={{ fontSize: 12, color: '#9A8070' }}>Meta: {proteinaMeta}g ou mais</div>
+              <div style={{ height: 6, background: '#EEE8E0', borderRadius: 3, marginTop: 8 }}>
+                <div style={{ height: '100%', background: proteina >= proteinaMeta ? 'var(--green)' : 'var(--copper)', borderRadius: 3, width: `${Math.min(100, (proteina/proteinaMeta)*100)}%`, transition: 'width .3s' }} />
+              </div>
+            </div>
+            <button onClick={() => setProteina(p => p + 10)}
+              style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--copper)', border: 'none', fontSize: 20, cursor: 'pointer', fontWeight: 700, color: 'white' }}>+</button>
+          </div>
+          <div style={{ color:'#8A7060', fontSize:12, lineHeight:1.45, marginTop:10 }}>
+            Proteína ajuda a preservar massa magra durante o emagrecimento com GLP-1.
+          </div>
+        </div>
+
         {!saved ? (
           <button className="btn-primary" onClick={salvar} style={{ fontSize: 16, padding: 16 }}>
             💾 Salvar registro de hoje
@@ -1626,6 +1816,7 @@ function DiarioScreen() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 16 }}>{emoji}</span>
                     <span style={{ fontSize: 12, color: '#9A8070' }}>💧 {(entrada.hydra || 0).toFixed(1)}L</span>
+                    <span style={{ fontSize: 12, color: '#9A8070' }}>💪 {entrada.proteina || 0}g</span>
                   </div>
                 </div>
               );
@@ -1660,7 +1851,7 @@ function PesoScreen({ perfil }) {
     const entries = [{ data: fmtData(dataInicioPerfil), peso: pesoInicialPerfil, dataISO: dataInicioPerfil }];
     const pesoAtualPerfil = parseFloat(perfil?.pesoAtual);
     if (pesoAtualPerfil && pesoAtualPerfil !== pesoInicialPerfil) {
-      const hoje = new Date().toISOString().split('T')[0];
+      const hoje = toLocalISODate();
       if (hoje !== dataInicioPerfil) entries.push({ data: fmtData(hoje), peso: pesoAtualPerfil, dataISO: hoje });
     }
     return entries;
@@ -1686,8 +1877,7 @@ function PesoScreen({ perfil }) {
   const adicionar = () => {
     const p = parseFloat(novoPeso.replace(',', '.'));
     if (!p || p < 30 || p > 300) return;
-    const hoje = new Date();
-    const dataISO = hoje.toISOString().split('T')[0];
+    const dataISO = toLocalISODate();
     const filtrado = pesos.filter(x => x.dataISO !== dataISO);
     salvarPesos([...filtrado, { data: fmtData(dataISO), peso: p, dataISO }].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1));
     setNovoPeso(''); setAdicionado(true); setTimeout(() => setAdicionado(false), 2500);
@@ -1704,7 +1894,7 @@ function PesoScreen({ perfil }) {
     const c = parseFloat(novaMedida.cintura.replace(',','.')), q = parseFloat(novaMedida.quadril.replace(',','.'));
     const b = parseFloat(novaMedida.braco.replace(',','.')), t = parseFloat(novaMedida.coxa.replace(',','.'));
     if (!c && !q && !b && !t) return;
-    const dataISO = new Date().toISOString().split('T')[0];
+    const dataISO = toLocalISODate();
     const novas = [...medidas.filter(m => m.dataISO !== dataISO),
       { dataISO, data: fmtData(dataISO), cintura: c||null, quadril: q||null, braco: b||null, coxa: t||null }
     ].sort((a, b) => a.dataISO > b.dataISO ? 1 : -1);
@@ -1734,11 +1924,14 @@ function PesoScreen({ perfil }) {
       <div className="header-grad px-5 pt-12 pb-4">
         <h2 style={{ color: 'var(--cream)', fontSize: 22, fontWeight: 800, margin: 0, marginBottom: 12, letterSpacing: '-0.3px' }}>Corpo & Composição</h2>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.18)', borderRadius: 12, padding: 4 }}>
-          {[['peso','⚖️ Peso'],['medidas','📏 Medidas']].map(([id, lbl]) => (
+          {[['peso','Peso','scale'],['medidas','Medidas','ruler']].map(([id, lbl, icon]) => (
             <button key={id} onClick={() => setAba(id)}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s',
+              style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, transition: 'all .2s', display:'flex', alignItems:'center', justifyContent:'center', gap:7,
                 background: aba === id ? 'var(--copper)' : 'transparent',
-                color: aba === id ? 'white' : 'rgba(245,237,227,0.6)' }}>{lbl}</button>
+                color: aba === id ? 'white' : 'rgba(245,237,227,0.6)' }}>
+              <Icon name={icon} size={15} color={aba === id ? 'white' : 'rgba(245,237,227,0.52)'} strokeWidth={2.1} />
+              {lbl}
+            </button>
           ))}
         </div>
       </div>
@@ -1766,11 +1959,11 @@ function PesoScreen({ perfil }) {
               <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
                 <div style={{ flex: 1, background: 'rgba(196,136,90,0.1)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--copper)' }}>{estimGordura}kg</div>
-                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>🔥 Gordura perdida</div>
+                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>Gordura perdida</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(78,160,120,0.1)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 24, fontWeight: 800, color: '#2E7D52' }}>{estimMuscular}kg</div>
-                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>💪 Massa magra*</div>
+                  <div style={{ fontSize: 11, color: '#8A7060', marginTop: 2 }}>Massa magra*</div>
                 </div>
               </div>
               {composSinal !== 'neutro' && (
@@ -1780,7 +1973,7 @@ function PesoScreen({ perfil }) {
                 </div>
               )}
               <div style={{ fontSize: 10, color: '#9A8070', marginTop: 8, lineHeight: 1.5 }}>
-                *Estimativa baseada em dados clínicos de GLP-1 (72% gordura / 28% massa magra). Registre medidas corporais na aba Medidas para análise mais precisa.
+                *Estimativa educativa baseada em referências clínicas de GLP-1. Registre medidas corporais na aba Medidas para acompanhar com mais contexto.
               </div>
             </div>
           )}
@@ -2165,12 +2358,12 @@ function ReScreen({ perfil }) {
   };
 
   const sugestoes = [
-    { emoji: '💉', texto: 'Como aplicar com seringa de insulina?' },
-    { emoji: '⏰', texto: 'Esqueci de aplicar, e agora?' },
-    { emoji: '🤢', texto: 'Estou com enjoo, o que fazer?' },
-    { emoji: '📍', texto: 'Onde posso aplicar e como rotacionar?' },
-    { emoji: '🥩', texto: 'Quanta proteína preciso comer?' },
-    { emoji: '⚖️', texto: 'Por que meu peso parou de cair?' },
+    { icon: 'syringe', texto: 'Como aplicar com seringa de insulina?' },
+    { icon: 'calendar', texto: 'Esqueci de aplicar, e agora?' },
+    { icon: 'activity', texto: 'Estou com enjoo, o que fazer?' },
+    { icon: 'target', texto: 'Onde posso aplicar e como rotacionar?' },
+    { icon: 'dumbbell', texto: 'Quanta proteína preciso comer?' },
+    { icon: 'scale', texto: 'Por que meu peso parou de cair?' },
   ];
 
   return (
@@ -2216,12 +2409,14 @@ function ReScreen({ perfil }) {
         )}
         {msgs.length === 1 && (
           <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: 11, color: '#9A8070', textAlign: 'center', marginBottom: 10, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Perguntas frequentes</div>
+            <div style={{ fontSize: 11, color: '#9A8070', textAlign: 'center', marginBottom: 10, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Perguntas frequentes</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
               {sugestoes.map(s => (
                 <button key={s.texto} onClick={() => enviar(s.texto)}
-                  style={{ background: 'white', border: '1.5px solid var(--copper-pale)', borderRadius: 16, padding: '10px 12px', fontSize: 12, color: 'var(--brown-light)', cursor: 'pointer', textAlign: 'left', boxShadow: '0 1px 4px rgba(45,31,20,0.06)', lineHeight: 1.35, fontWeight: 500, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <span style={{ fontSize: 16 }}>{s.emoji}</span>
+                  style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '11px 12px', fontSize: 12, color: 'var(--brown-light)', cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', lineHeight: 1.35, fontWeight: 600, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ width:26, height:26, borderRadius:8, background:'var(--copper-pale)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon name={s.icon} size={14} color="var(--copper)" strokeWidth={2.2} />
+                  </span>
                   <span>{s.texto}</span>
                 </button>
               ))}
@@ -3095,7 +3290,7 @@ function OnboardingScreen({ onComplete }) {
   const TOTAL = 12;
   const DADOS_INICIAL = {
     status: '', nome: '', medicamento: '', concentracaoAmpola: '', totalAmpola: '', volumeMl: '', dose: '5mg',
-    dataInicio: new Date().toISOString().split('T')[0],
+    dataInicio: toLocalISODate(),
     sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
   };
   // Retoma de onde parou se o usuário fechou no meio
@@ -3354,7 +3549,7 @@ function OnboardingScreen({ onComplete }) {
       <OBHeader title="Quando foi sua primeira aplicação?" subtitle="Calculamos sua janela semanal a partir desta data" />
       <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
         <input type="date" value={dados.dataInicio} onChange={e => set('dataInicio', e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
+          max={toLocalISODate()}
           style={{ width: '100%', padding: '16px', borderRadius: 14, fontSize: 16, border: '2px solid var(--copper)', background: 'white', color: 'var(--brown)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', boxShadow: '0 2px 8px rgba(196,136,90,0.15)' }} />
         <div style={{ marginTop: 16, padding: '14px 16px', background: 'var(--copper-pale)', borderRadius: 12, border: '1px solid rgba(196,136,90,0.3)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
@@ -3493,7 +3688,6 @@ const TABS = [
   { id: 'planejador', label: 'Picadinha', icon: 'syringe' },
   { id: 'diario',     label: 'Diário',    icon: 'book-open' },
   { id: 'peso',       label: 'Peso',      icon: 'scale' },
-  { id: 'rê',         label: 'Rê',        icon: 'message-circle' },
 ];
 
 /* ─── APP ROOT ───────────────────────────────────────────── */
@@ -3522,7 +3716,7 @@ function App() {
     const diasRestantes = Math.max(0, diffDias(_hojeApp, proximaApl));
 
     if (diasRestantes === 0) {
-      const hoje2 = new Date().toISOString().split('T')[0];
+      const hoje2 = toLocalISODate();
       const ultimaNotif = localStorage.getItem('renove_ultima_notif');
       if (ultimaNotif !== hoje2) {
         new Notification('Renove GLP-1 💉', {
@@ -3540,8 +3734,8 @@ function App() {
 
   const screens = {
     home: <HomeScreen setTab={setTab} perfil={perfil} />,
-    planejador: <PlanejadorScreen perfil={perfil} />,
-    diario: <DiarioScreen />,
+    planejador: <PlanejadorScreen perfil={perfil} setTab={setTab} />,
+    diario: <DiarioScreen perfil={perfil} />,
     peso: <PesoScreen perfil={perfil} />,
     rê: <ReScreen perfil={perfil} />,
     calculadora: <CalculadoraScreen perfil={perfil} setPerfil={setPerfil} />,
@@ -3562,24 +3756,7 @@ function App() {
 
       {/* Botão flutuante da Rê */}
       {tab !== 'rê' && tab !== 'perfil' && (
-        <button
-          onClick={() => setTab('rê')}
-          className="re-fab"
-          aria-label="Falar com a Rê"
-        >
-          <div className="re-fab-inner">
-            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="20" fill="none"/>
-              {/* Folha estilizada */}
-              <path d="M20 8 C14 8 10 13 10 19 C10 25 14 30 20 32 C26 30 30 25 30 19 C30 13 26 8 20 8Z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
-              <path d="M20 10 Q24 15 23 22 Q22 28 20 31" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-              <path d="M20 14 Q17 17 16 21" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              <path d="M20 14 Q23 17 24 21" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-            </svg>
-            <span className="re-fab-label">Rê</span>
-          </div>
-          <span className="re-fab-ping" />
-        </button>
+        <ReFAB onClick={() => setTab('rê')} />
       )}
 
       {/* Bottom Nav */}
