@@ -239,6 +239,26 @@
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
 
+/* ─── UTILS ───────────────────────────────────────────────── */
+// FIX: converte "YYYY-MM-DD" para Date sem problema de timezone
+// new Date("2025-01-01") interpreta como UTC → meia-noite UTC → pode ser "31/12" em GMT-3
+// Solução: split manual, que sempre usa hora local
+function parseLocalDate(isoStr) {
+  if (!isoStr) return null;
+  const [y, m, d] = isoStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+// Retorna hoje como Date local com horas zeradas
+function hoje() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+// Diferença em dias inteiros entre duas Dates
+function diffDias(a, b) {
+  return Math.floor((b - a) / 86400000);
+}
+
 /* ─── DADOS ───────────────────────────────────────────────── */
 const LOCAIS = ['Abdômen esquerdo', 'Abdômen direito', 'Coxa esquerda', 'Coxa direita', 'Braço esquerdo', 'Braço direito'];
 
@@ -406,13 +426,25 @@ function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }) {
 
 /* ─── SVG CHART ──────────────────────────────────────────── */
 function WeightChart({ dados, meta }) {
+  // FIX: gráfico com 1 único ponto não divide por zero
+  if (!dados || dados.length === 0) return null;
+  if (dados.length === 1) {
+    const p = dados[0].peso;
+    return (
+      <div style={{ textAlign:'center', padding:'20px 0', color:'var(--brown-light)', fontSize:13 }}>
+        <div style={{ fontSize:28, fontWeight:800, color:'var(--copper)' }}>{p} kg</div>
+        <div style={{ marginTop:4, opacity:.6 }}>Registre mais pesagens para ver o gráfico</div>
+      </div>
+    );
+  }
   const W = 340, H = 160, PAD = { top: 20, right: 20, bottom: 30, left: 40 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
   const minP = Math.min(...dados.map(d => d.peso)) - 1;
   const maxP = Math.max(...dados.map(d => d.peso)) + 1;
+  // FIX: denominador nunca será 0 pois dados.length >= 2
   const scaleX = i => PAD.left + (i / (dados.length - 1)) * chartW;
-  const scaleY = v => PAD.top + (1 - (v - minP) / (maxP - minP)) * chartH;
+  const scaleY = v => PAD.top + (1 - (v - minP) / Math.max(0.01, maxP - minP)) * chartH;
   const pts = dados.map((d, i) => `${scaleX(i)},${scaleY(d.peso)}`).join(' ');
   const area = `M ${scaleX(0)},${scaleY(dados[0].peso)} ` +
     dados.slice(1).map((d, i) => `L ${scaleX(i+1)},${scaleY(d.peso)}`).join(' ') +
@@ -588,27 +620,27 @@ function ApplicacaoAnimada() {
 
 /* ─── TELA: HOME ─────────────────────────────────────────── */
 function HomeScreen({ setTab, perfil }) {
-  const pesoAtual  = parseFloat(perfil?.pesoAtual)  || 98.9;
-  const pesoInicio = parseFloat(perfil?.pesoInicio) || 112.4;
+  const pesoAtual  = parseFloat(perfil?.pesoAtual)  || null;
+  const pesoInicio = parseFloat(perfil?.pesoInicio) || null;
   const meta       = parseFloat(perfil?.meta)       || 85;
-  const perdido    = Math.max(0, pesoInicio - pesoAtual).toFixed(1);
-  const progresso  = Math.min(100, Math.max(0, ((pesoInicio - pesoAtual) / (pesoInicio - meta)) * 100)).toFixed(0);
+  const perdido    = (pesoInicio && pesoAtual) ? Math.max(0, pesoInicio - pesoAtual).toFixed(1) : null;
+  const progresso  = (pesoInicio && pesoAtual && meta && pesoInicio !== meta)
+    ? Math.min(100, Math.max(0, ((pesoInicio - pesoAtual) / (pesoInicio - meta)) * 100)).toFixed(0) : null;
 
   // Saudação por horário
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
   // Calcular dias de jornada
-  const dataInicioDate = perfil?.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : new Date('2025-02-01');
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000 * 60 * 60 * 24)));
+  const dataInicioDate = parseLocalDate(perfil?.dataInicio) || new Date(2025, 1, 1);
+  const _hoje = hoje();
+  const diasJornada = Math.max(0, diffDias(dataInicioDate, _hoje));
 
   // Calcular próxima aplicação (a cada 7 dias a partir da data de início)
   const semanaAtual = Math.floor(diasJornada / 7);
   const proximaApl = new Date(dataInicioDate);
   proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
-  const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000 * 60 * 60 * 24)));
+  const diasRestantes = Math.max(0, diffDias(_hoje, proximaApl));
   const diasSemanaPT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const proxDia = diasSemanaPT[proximaApl.getDay()];
   const proxDataStr = `${proximaApl.getDate().toString().padStart(2,'0')}/${(proximaApl.getMonth()+1).toString().padStart(2,'0')}`;
@@ -636,8 +668,8 @@ function HomeScreen({ setTab, perfil }) {
         <div className="flex gap-3">
           {[
             { label: 'Dias de jornada', valor: diasJornada, icon: 'calendar' },
-            { label: 'Kg perdidos', valor: `${perdido}kg`, icon: 'trending-down' },
-            { label: 'Dose atual', valor: perfil?.dose || '5mg', icon: 'zap' },
+            { label: 'Kg perdidos', valor: perdido ? `${perdido}kg` : '–', icon: 'trending-down' },
+            { label: 'Dose atual', valor: perfil?.dose || '–', icon: 'zap' },
           ].map(s => (
             <div key={s.label} style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '10px 8px', textAlign: 'center', border: '1px solid rgba(196,136,90,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
@@ -769,17 +801,17 @@ function HomeScreen({ setTab, perfil }) {
 
         {/* Rê proativa — Inteligência de adesão */}
         {(() => {
-          const agora = new Date();
+          const agora = hoje();
           let diasSemDiario = 999;
           try {
             const diario = JSON.parse(localStorage.getItem('renove_diario') || '{}');
             const datas = Object.keys(diario).sort().reverse();
-            if (datas.length > 0) diasSemDiario = Math.floor((agora - new Date(datas[0] + 'T00:00:00')) / 86400000);
+            if (datas.length > 0) diasSemDiario = diffDias(parseLocalDate(datas[0]), agora);
           } catch {}
           let diasSemPeso = 999;
           try {
             const ps = JSON.parse(localStorage.getItem('renove_pesos') || '[]');
-            if (ps.length > 0) diasSemPeso = Math.floor((agora - new Date(ps[ps.length-1].dataISO + 'T00:00:00')) / 86400000);
+            if (ps.length > 0) diasSemPeso = diffDias(parseLocalDate(ps[ps.length-1].dataISO), agora);
           } catch {}
 
           let msg = null, destino = 'diario';
@@ -860,17 +892,17 @@ function PlanejadorScreen({ perfil }) {
   const [showConfetti, setShowConfetti] = useState(false);
 
   // ── Calcular datas ──
-  const hoje = new Date();
-  const dataInicio = perfil?.dataInicio ? new Date(perfil.dataInicio) : null;
+  const _hojePlan = hoje();
+  const dataInicio = parseLocalDate(perfil?.dataInicio);
   const dosePerfil = perfil?.dose || '';
 
   let diasJornada = 0, semanaAtual = 0, proxData = null, diasRest = null;
   if (dataInicio) {
-    diasJornada = Math.floor((hoje - dataInicio) / 86400000);
+    diasJornada = Math.max(0, diffDias(dataInicio, _hojePlan));
     semanaAtual = Math.floor(diasJornada / 7);
     proxData = new Date(dataInicio);
     proxData.setDate(dataInicio.getDate() + (semanaAtual + 1) * 7);
-    diasRest = Math.ceil((proxData - hoje) / 86400000);
+    diasRest = diffDias(_hojePlan, proxData);
   }
 
   // ── Verificar se já aplicou esta semana ──
@@ -1280,8 +1312,8 @@ function DiarioScreen() {
             <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 10 }}>Registros anteriores</div>
             {entradasRecentes.map(([iso, entrada]) => {
               if (iso === dataISO) return null;
-              const d = new Date(iso + 'T00:00:00');
-              const dataFormatada = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              const d = parseLocalDate(iso);
+              const dataFormatada = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}` : iso;
               const max = Math.max(...Object.values(entrada.sintomas || {}));
               const cor = max <= 1 ? 'var(--green)' : max === 2 ? 'var(--yellow)' : 'var(--red)';
               const emoji = max <= 1 ? '🟢' : max === 2 ? '🟡' : '🔴';
@@ -1312,7 +1344,8 @@ function PesoScreen({ perfil }) {
   const dataInicioPerfil = perfil?.dataInicio || '2025-02-01';
 
   const fmtData = (isoStr) => {
-    const d = new Date(isoStr + 'T00:00:00');
+    const d = parseLocalDate(isoStr);
+    if (!d) return '–';
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
   };
 
@@ -1728,14 +1761,26 @@ function CalculadoraScreen() {
 
 /* ─── TELA: RÊ (chat) ────────────────────────────────────── */
 function ReScreen({ perfil }) {
-  const [msgs, setMsgs] = useState(MSGS_INICIAIS);
-  const [historico, setHistorico] = useState([]);
+  const [msgs, setMsgs] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('renove_chat_msgs') || 'null');
+      return saved && saved.length > 0 ? saved : MSGS_INICIAIS;
+    } catch { return MSGS_INICIAIS; }
+  });
+  const [historico, setHistorico] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_chat_hist') || '[]'); } catch { return []; }
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+
+  // Persistir conversa sempre que msgs mudar
+  useEffect(() => {
+    try { localStorage.setItem('renove_chat_msgs', JSON.stringify(msgs.slice(-60))); } catch {}
+  }, [msgs]);
 
   const enviar = async (textoOverride) => {
     const txt = (textoOverride || input).trim();
@@ -1748,6 +1793,7 @@ function ReScreen({ perfil }) {
 
     const novoHistorico = [...historico, { role: 'user', content: txt }];
     setHistorico(novoHistorico);
+    try { localStorage.setItem('renove_chat_hist', JSON.stringify(novoHistorico.slice(-30))); } catch {}
 
     try {
       // Se tiver chave local (dev), chama OpenAI direto.
@@ -2039,7 +2085,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#E65100', marginBottom: 5, textTransform: 'uppercase' }}>🟠 Total (mg)</div>
                 <div style={{ position: 'relative' }}>
                   <input type="number" inputMode="decimal" placeholder="15" value={form.totalAmpola}
-                    onChange={e => { upd('totalAmpola', e.target.value); const mg=parseFloat(e.target.value), ml=parseFloat(form.volumeMl)||1; if(!isNaN(mg)&&mg>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
+                    onChange={e => { upd('totalAmpola', e.target.value); const mg=parseFloat(e.target.value), ml=parseFloat(form.volumeMl); if(!isNaN(mg)&&mg>0&&!isNaN(ml)&&ml>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
                     style={{ ...fieldStyle, textAlign: 'center', fontSize: 17, fontWeight: 700, paddingRight: 34, borderColor: form.totalAmpola ? '#E65100' : undefined }} />
                   <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, fontWeight:700, color:'#E65100', opacity:.8 }}>mg</span>
                 </div>
@@ -2170,13 +2216,13 @@ function NotificacoesScreen({ perfil }) {
   };
 
   // Calcular próxima aplicação
-  const dataInicioDate = perfil?.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : new Date();
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000*60*60*24)));
+  const dataInicioDate = parseLocalDate(perfil?.dataInicio) || hoje();
+  const _hojeNotif = hoje();
+  const diasJornada = Math.max(0, diffDias(dataInicioDate, _hojeNotif));
   const semanaAtual = Math.floor(diasJornada / 7);
   const proximaApl = new Date(dataInicioDate);
   proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
-  const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000*60*60*24)));
+  const diasRestantes = Math.max(0, diffDias(_hojeNotif, proximaApl));
   const diasSemanaPT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   const proxDia = diasSemanaPT[proximaApl.getDay()];
   const proxDataStr = `${proximaApl.getDate().toString().padStart(2,'0')}/${(proximaApl.getMonth()+1).toString().padStart(2,'0')}`;
@@ -3082,14 +3128,14 @@ function App() {
     const cfg = (() => { try { return JSON.parse(localStorage.getItem('renove_notif') || '{}'); } catch { return {}; } })();
     if (cfg.aplicacao === false) return;
 
-    const dataInicioDate = perfil.dataInicio ? new Date(perfil.dataInicio + 'T00:00:00') : null;
+    const dataInicioDate = parseLocalDate(perfil.dataInicio);
     if (!dataInicioDate) return;
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const diasJornada = Math.max(0, Math.floor((hoje - dataInicioDate) / (1000*60*60*24)));
+    const _hojeApp = hoje();
+    const diasJornada = Math.max(0, diffDias(dataInicioDate, _hojeApp));
     const semanaAtual = Math.floor(diasJornada / 7);
     const proximaApl = new Date(dataInicioDate);
     proximaApl.setDate(proximaApl.getDate() + (semanaAtual + 1) * 7);
-    const diasRestantes = Math.max(0, Math.ceil((proximaApl - hoje) / (1000*60*60*24)));
+    const diasRestantes = Math.max(0, diffDias(_hojeApp, proximaApl));
 
     if (diasRestantes === 0) {
       const hoje2 = new Date().toISOString().split('T')[0];
