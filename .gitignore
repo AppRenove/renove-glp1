@@ -1,6 +1,17 @@
-# Arquivo de configuração local com chave da API (não vai pro GitHub)
+# Chave da API local (nunca vai pro GitHub)
 config.js
 
-# Arquivos do sistema
+# Arquivos de sistema
 .DS_Store
 Thumbs.db
+
+# Arquivos temporários do launcher Windows
+Abrindo
+
+# Backups e zips locais
+*.zip
+
+# Credenciais e códigos sensíveis
+stripe_backup_code.txt
+*.key
+*.env
