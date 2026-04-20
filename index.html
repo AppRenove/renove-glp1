@@ -1966,12 +1966,19 @@ function PesoScreen({ perfil }) {
 }
 
 /* ─── TELA: CALCULADORA ──────────────────────────────────── */
-function CalculadoraScreen() {
-  const [form, setForm] = useState({ sexo: 'F', idade: 34, altura: 165, peso: 98.9, cintura: 96, quadril: 112, pescoco: 36 });
+function CalculadoraScreen({ perfil, setPerfil }) {
+  const [form, setForm] = useState({
+    sexo: perfil?.sexo || 'F',
+    idade: 34,
+    altura: 165,
+    peso: parseFloat(perfil?.pesoAtual) || 98.9,
+    cintura: 96, quadril: 112, pescoco: 36,
+  });
   const [result, setResult] = useState(null);
+  const [pesoSalvo, setPesoSalvo] = useState(false);
 
   const calcular = () => {
-    const { sexo, altura, cintura, quadril, pescoco, peso, idade } = form;
+    const { sexo, altura, cintura, quadril, pescoco, peso } = form;
     let gordura;
     if (sexo === 'F') {
       gordura = 495 / (1.29579 - 0.35004 * Math.log10(cintura + quadril - pescoco) + 0.22100 * Math.log10(altura)) - 450;
@@ -1984,6 +1991,14 @@ function CalculadoraScreen() {
     const imc = peso / ((altura / 100) ** 2);
     const rcq = cintura / quadril;
     setResult({ gordura: gordura.toFixed(1), massaGorda: massaGorda.toFixed(1), massaMagra: massaMagra.toFixed(1), imc: imc.toFixed(1), rcq: rcq.toFixed(2) });
+    // Salva peso atual no perfil automaticamente
+    if (perfil && setPerfil && !isNaN(peso) && peso > 0) {
+      const novo = { ...perfil, pesoAtual: String(peso) };
+      setPerfil(novo);
+      try { localStorage.setItem('renove_perfil', JSON.stringify(novo)); } catch {}
+      setPesoSalvo(true);
+      setTimeout(() => setPesoSalvo(false), 3000);
+    }
   };
 
   const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({ ...p, [key]: parseFloat(e.target.value) || e.target.value }) )});
@@ -2031,6 +2046,11 @@ function CalculadoraScreen() {
             </div>
           ))}
           <button className="btn-primary" onClick={calcular} style={{ fontSize: 15, padding: 14, marginTop: 4 }}>Calcular composição corporal</button>
+          {pesoSalvo && (
+            <div style={{ marginTop: 8, background: '#E8F8EE', border: '1px solid var(--green)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#2E7D52', fontWeight: 600, textAlign: 'center' }}>
+              ✅ Peso ({form.peso}kg) salvo no seu perfil
+            </div>
+          )}
         </div>
 
         {result && (
@@ -2364,20 +2384,32 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Dose atual</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Personalizada'].map(d => (
-                <button key={d} onClick={() => upd('dose', d)}
-                  style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                    background: form.dose === d ? 'var(--copper)' : '#F5F0EC',
-                    color: form.dose === d ? 'white' : 'var(--brown-light)', border: 'none' }}>
-                  {d}
-                </button>
-              ))}
-            </div>
-            {form.dose === 'Personalizada' && (
-              <input type="text" placeholder="Ex: 3mg" onChange={e => upd('dose', e.target.value)}
-                style={{ ...fieldStyle, marginTop: 10 }} />
-            )}
+            {(() => {
+              const DOSES_FIXAS = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg'];
+              const isCustom = !DOSES_FIXAS.includes(form.dose);
+              return (
+                <>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[...DOSES_FIXAS, 'Personalizada'].map(d => (
+                      <button key={d}
+                        onClick={() => d === 'Personalizada' ? (isCustom ? null : upd('dose', '')) : upd('dose', d)}
+                        style={{ padding: '8px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
+                          background: (d === 'Personalizada' ? isCustom : form.dose === d) ? 'var(--copper)' : '#F5F0EC',
+                          color:      (d === 'Personalizada' ? isCustom : form.dose === d) ? 'white'         : 'var(--brown-light)',
+                        }}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                  {isCustom && (
+                    <input type="text" placeholder="Ex: 3mg" value={form.dose}
+                      onChange={e => upd('dose', e.target.value)}
+                      autoFocus={form.dose === ''}
+                      style={{ ...fieldStyle, marginTop: 10 }} />
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <div>
@@ -3061,12 +3093,22 @@ function VialAnimationLegacy({ mgValue, mlValue }) {
 
 function OnboardingScreen({ onComplete }) {
   const TOTAL = 12;
-  const [step, setStep] = useState(0);
-  const [dados, setDados] = useState({
+  const DADOS_INICIAL = {
     status: '', nome: '', medicamento: '', concentracaoAmpola: '', totalAmpola: '', volumeMl: '', dose: '5mg',
     dataInicio: new Date().toISOString().split('T')[0],
     sexo: '', pesoInicio: 100, pesoAtual: 95, meta: 80, objetivos: [],
+  };
+  // Retoma de onde parou se o usuário fechou no meio
+  const [step, setStep] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_onboarding') || '{}')?.step || 0; } catch { return 0; }
   });
+  const [dados, setDados] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('renove_onboarding') || '{}')?.dados || DADOS_INICIAL; } catch { return DADOS_INICIAL; }
+  });
+  // Salva progresso automaticamente a cada mudança
+  useEffect(() => {
+    try { localStorage.setItem('renove_onboarding', JSON.stringify({ step, dados })); } catch {}
+  }, [step, dados]);
 
   const set = (k, v) => setDados(p => ({ ...p, [k]: v }));
   const toggleObj = id => setDados(p => ({
@@ -3090,6 +3132,7 @@ function OnboardingScreen({ onComplete }) {
   const salvar = () => {
     const perfil = { ...dados, criadoEm: new Date().toISOString() };
     localStorage.setItem('renove_perfil', JSON.stringify(perfil));
+    localStorage.removeItem('renove_onboarding'); // limpa progresso salvo
     onComplete(perfil);
   };
 
@@ -3279,11 +3322,28 @@ function OnboardingScreen({ onComplete }) {
   if (step === 5) return (
     <Wrap>
       <OBHeader title="Qual é a sua dosagem?" subtitle="Escolha a dose que você usa ou quer usar" />
-      <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
-        {doses.map(d => (
-          <OptionRow key={d} selected={dados.dose === d} onClick={() => set('dose', d)} iconName="hourglass" label={d} />
-        ))}
-      </div>
+      {(() => {
+        const DOSES_FIXAS_OB = ['2,5mg', '5mg', '7,5mg', '10mg', '12,5mg', '15mg', 'Ainda não sei minha dose'];
+        const isCustomOB = !DOSES_FIXAS_OB.includes(dados.dose);
+        return (
+          <div style={{ flex: 1, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+            {doses.map(d => (
+              <OptionRow key={d}
+                selected={d === 'Dose personalizada' ? (dados.dose === d || isCustomOB) : dados.dose === d}
+                onClick={() => set('dose', d)}
+                iconName="hourglass" label={d} />
+            ))}
+            {(dados.dose === 'Dose personalizada' || isCustomOB) && (
+              <input type="text"
+                placeholder="Digite sua dose (ex: 3mg, 7,5mg)"
+                value={dados.dose === 'Dose personalizada' ? '' : dados.dose}
+                onChange={e => set('dose', e.target.value || 'Dose personalizada')}
+                autoFocus={dados.dose === 'Dose personalizada'}
+                style={{ width:'100%', padding:'14px 16px', borderRadius:12, border:'2px solid var(--copper)', fontSize:15, color:'var(--brown)', background:'white', boxSizing:'border-box', fontWeight:600, outline:'none', fontFamily:'Inter,sans-serif' }} />
+            )}
+          </div>
+        );
+      })()}
       <OBFooter onPress={next} />
     </Wrap>
   );
@@ -3484,7 +3544,7 @@ function App() {
     diario: <DiarioScreen />,
     peso: <PesoScreen perfil={perfil} />,
     rê: <ReScreen perfil={perfil} />,
-    calculadora: <CalculadoraScreen />,
+    calculadora: <CalculadoraScreen perfil={perfil} setPerfil={setPerfil} />,
     notificacoes: <NotificacoesScreen perfil={perfil} />,
     perfil: <PerfilScreen perfil={perfil} setPerfil={setPerfil} setTab={setTab} />,
   };
@@ -3545,6 +3605,15 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+// Registrar Service Worker para notificações em background e modo offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('[SW] Registrado:', reg.scope))
+      .catch(err => console.warn('[SW] Falha ao registrar:', err));
+  });
+}
 </script>
 </body>
 </html>
