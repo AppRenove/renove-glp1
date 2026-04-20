@@ -2388,7 +2388,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#E65100', marginBottom: 5, textTransform: 'uppercase' }}>🟠 Total (mg)</div>
                 <div style={{ position: 'relative' }}>
                   <input type="number" inputMode="decimal" placeholder="15" value={form.totalAmpola}
-                    onChange={e => { upd('totalAmpola', e.target.value); const mg=parseFloat(e.target.value), ml=parseFloat(form.volumeMl); if(!isNaN(mg)&&mg>0&&!isNaN(ml)&&ml>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
+                    onChange={e => { upd('totalAmpola', e.target.value); const r=calcularConcentracao(e.target.value, form.volumeMl); if(r.ok) upd('concentracaoAmpola', `${r.valor.toFixed(2)}mg/ml`); }}
                     style={{ ...fieldStyle, textAlign: 'center', fontSize: 17, fontWeight: 700, paddingRight: 34, borderColor: form.totalAmpola ? '#E65100' : undefined }} />
                   <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, fontWeight:700, color:'#E65100', opacity:.8 }}>mg</span>
                 </div>
@@ -2397,7 +2397,7 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#2E7D32', marginBottom: 5, textTransform: 'uppercase' }}>🟢 Volume (ml)</div>
                 <div style={{ position: 'relative' }}>
                   <input type="number" inputMode="decimal" placeholder="2" value={form.volumeMl || ''}
-                    onChange={e => { upd('volumeMl', e.target.value); const mg=parseFloat(form.totalAmpola), ml=parseFloat(e.target.value); if(!isNaN(mg)&&!isNaN(ml)&&ml>0) upd('concentracaoAmpola', `${parseFloat((mg/ml).toFixed(2))}mg/ml`); }}
+                    onChange={e => { upd('volumeMl', e.target.value); const r=calcularConcentracao(form.totalAmpola, e.target.value); if(r.ok) upd('concentracaoAmpola', `${r.valor.toFixed(2)}mg/ml`); }}
                     style={{ ...fieldStyle, textAlign: 'center', fontSize: 17, fontWeight: 700, paddingRight: 32, borderColor: form.volumeMl ? '#43A047' : undefined }} />
                   <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, fontWeight:700, color:'#43A047', opacity:.8 }}>ml</span>
                 </div>
@@ -2411,14 +2411,19 @@ function PerfilScreen({ perfil, setPerfil, setTab }) {
               </div>
             )}
             {/* Preview doses */}
-            {form.totalAmpola && form.dose && !isNaN(parseFloat(form.totalAmpola)) && !isNaN(parseFloat(form.dose)) && parseFloat(form.dose) > 0 && (
-              <div style={{ marginTop: 8, background: '#E8F8EE', border: '1px solid rgba(46,125,82,0.25)', borderRadius: 11, padding: '10px 13px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🧮</span>
-                <span style={{ fontSize: 13, color: '#2E7D52', fontWeight: 600 }}>
-                  {Math.floor(parseFloat(form.totalAmpola) / parseFloat(form.dose))} doses de {form.dose} por ampola
-                </span>
-              </div>
-            )}
+            {(() => {
+              const _mg = normalizarNumero(form.totalAmpola);
+              const _dose = normalizarNumero(form.dose);
+              if (!(_mg > 0 && _dose > 0)) return null;
+              return (
+                <div style={{ marginTop: 8, background: '#E8F8EE', border: '1px solid rgba(46,125,82,0.25)', borderRadius: 11, padding: '10px 13px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🧮</span>
+                  <span style={{ fontSize: 13, color: '#2E7D52', fontWeight: 600 }}>
+                    {Math.floor(_mg / _dose)} doses de {form.dose} por ampola
+                  </span>
+                </div>
+              );
+            })()}
             <button onClick={() => { upd('totalAmpola',''); upd('volumeMl',''); upd('concentracaoAmpola','caneta'); }}
               style={{ marginTop: 10, fontSize: 12, color: '#9A8070', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 500 }}>
               Uso caneta pré-preenchida (sem frasco)
@@ -2909,13 +2914,18 @@ function Step4Ampola({ initialMg, initialMl, initialDose, pct, onBack, onNext })
   const [mg, setMg] = React.useState(initialMg || '');
   const [ml, setMl] = React.useState(initialMl || '');
 
-  const mgNum    = parseFloat(mg);
-  const mlNum    = parseFloat(ml);
-  const doseNum  = parseFloat(initialDose);
-  const concCalc = (!isNaN(mgNum) && !isNaN(mlNum) && mlNum > 0)
-    ? parseFloat((mgNum / mlNum).toFixed(2)) : null;
-  const dosesAmpola = (!isNaN(mgNum) && !isNaN(doseNum) && doseNum > 0)
+  // ── Cálculo usando funções farmacológicas centralizadas ──
+  const concResult  = calcularConcentracao(mg, ml);
+  const concCalc    = concResult.ok ? concResult.valor : null;          // raw, sem arredondar
+  const concDisplay = concResult.ok ? concResult.valor.toFixed(2) : null;  // para exibição
+
+  const mgNum   = normalizarNumero(mg);
+  const doseNum = normalizarNumero(initialDose);
+  const dosesAmpola = (concResult.ok && !isNaN(doseNum) && doseNum > 0 && mgNum > 0)
     ? Math.floor(mgNum / doseNum) : null;
+
+  // Validação: dose não pode ser maior que total da ampola
+  const doseExcedeTotalAviso = concResult.ok && !isNaN(doseNum) && doseNum > 0 && doseNum > mgNum;
 
   const inputBase = {
     width:'100%', padding:'14px 40px 14px 16px', borderRadius:14,
@@ -2925,11 +2935,9 @@ function Step4Ampola({ initialMg, initialMl, initialDose, pct, onBack, onNext })
   };
 
   const handleNext = () => {
-    onNext({
-      mg,
-      ml,
-      conc: concCalc ? `${concCalc}mg/ml` : (mg ? `${mgNum}mg/ml` : ''),
-    });
+    // Salva concentração com 2 casas decimais — padrão do perfil
+    const concSalva = concDisplay ? `${concDisplay}mg/ml` : (mgNum > 0 ? `${mgNum}mg/ml` : '');
+    onNext({ mg, ml, conc: concSalva });
   };
 
   return (
@@ -2990,13 +2998,26 @@ function Step4Ampola({ initialMg, initialMl, initialDose, pct, onBack, onNext })
           </div>
         </div>
 
+        {/* Aviso: dose maior que total da ampola */}
+        {doseExcedeTotalAviso && (
+          <div style={{ marginTop:10, background:'#FFF8F0', border:'1.5px solid #E65100', borderRadius:13, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
+            <span style={{ fontSize:18, lineHeight:1.2 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:'#E65100' }}>Dose maior que o total da ampola</div>
+              <div style={{ fontSize:11.5, color:'#8A4000', marginTop:1, lineHeight:1.4 }}>
+                A dose semanal ({initialDose}) é maior que o total da ampola ({mg}mg). Verifique os valores.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Concentração calculada */}
-        {concCalc && (
+        {concDisplay && (
           <div style={{ marginTop:10, background:'linear-gradient(135deg,rgba(196,136,90,0.12),rgba(196,136,90,0.04))', border:'1.5px solid rgba(196,136,90,0.35)', borderRadius:13, padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:10, color:'var(--brown-light)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.4px' }}>Concentração calculada</div>
-              <div style={{ fontSize:22, fontWeight:900, color:'var(--copper)', marginTop:1 }}>{concCalc} mg/ml</div>
-              <div style={{ fontSize:11, color:'#9A8070', marginTop:1 }}>{mg}mg ÷ {ml}ml = {concCalc}mg por ml</div>
+              <div style={{ fontSize:22, fontWeight:900, color:'var(--copper)', marginTop:1 }}>{concDisplay} mg/ml</div>
+              <div style={{ fontSize:11, color:'#9A8070', marginTop:1 }}>{mg}mg ÷ {ml}ml = {concDisplay}mg por ml</div>
             </div>
             <div style={{ width:38, height:38, borderRadius:'50%', background:'rgba(196,136,90,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
