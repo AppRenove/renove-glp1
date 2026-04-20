@@ -259,6 +259,81 @@ function diffDias(a, b) {
   return Math.floor((b - a) / 86400000);
 }
 
+/* ─── CÁLCULO FARMACOLÓGICO ───────────────────────────────── */
+// 1. Normaliza entrada — aceita vírgula ou ponto decimal
+function normalizarNumero(str) {
+  if (str === null || str === undefined || str === '') return NaN;
+  return parseFloat(String(str).replace(',', '.'));
+}
+
+// 2. Valida um valor numérico positivo
+function validarEntrada(str) {
+  const n = normalizarNumero(str);
+  if (isNaN(n) || n <= 0) return { ok: false, valor: NaN };
+  return { ok: true, valor: n };
+}
+
+// 3. Calcula concentração (mg/mL) a partir da ampola
+function calcularConcentracao(quantidadeMg, volumeMl) {
+  const mg = normalizarNumero(quantidadeMg);
+  const ml = normalizarNumero(volumeMl);
+  if (isNaN(mg) || mg <= 0) return { ok: false, erro: 'Quantidade (mg) inválida ou zero' };
+  if (isNaN(ml) || ml <= 0) return { ok: false, erro: 'Volume (mL) inválido ou zero' };
+  return { ok: true, valor: mg / ml };         // não arredondar aqui
+}
+
+// 4. Calcula volume necessário para a dose (mL)
+function calcularVolumeNecessario(doseMg, concentracaoMgMl) {
+  const dose = normalizarNumero(doseMg);
+  const conc = normalizarNumero(concentracaoMgMl);
+  if (isNaN(dose) || dose <= 0) return { ok: false, erro: 'Dose inválida ou zero' };
+  if (isNaN(conc) || conc <= 0) return { ok: false, erro: 'Concentração inválida (divisão por zero)' };
+  return { ok: true, valor: dose / conc };     // não arredondar aqui
+}
+
+// 5. Converte mL → UI usando lógica U-100 (1 mL = 100 UI)
+function mlParaUnidades(volumeMl) {
+  return volumeMl * 100;
+}
+
+// 6. Valida se as unidades cabem na seringa escolhida
+const LIMITES_SERINGA = {
+  100: { maxMl: 1.0, maxUI: 100 },
+   50: { maxMl: 0.5, maxUI: 50  },
+   30: { maxMl: 0.3, maxUI: 30  },
+};
+function validarLimiteSeringa(unidades, tipoUI) {
+  const lim = LIMITES_SERINGA[tipoUI] || LIMITES_SERINGA[100];
+  if (unidades > lim.maxUI) {
+    return {
+      ok: false,
+      mensagem: `Dose excede a capacidade da U-${tipoUI} (máx ${lim.maxUI} UI / ${lim.maxMl} mL). Use uma seringa maior.`,
+    };
+  }
+  return { ok: true };
+}
+
+// Função principal — retorna objeto completo ou null se dados insuficientes
+function calcularDoseFarmaco(totalAmpMg, volumeAmpMl, doseMg, tipoSeringa) {
+  const cRes = calcularConcentracao(totalAmpMg, volumeAmpMl);
+  if (!cRes.ok) return null;
+  const vRes = calcularVolumeNecessario(doseMg, cRes.valor);
+  if (!vRes.ok) return null;
+  const ui   = mlParaUnidades(vRes.valor);
+  const lim  = validarLimiteSeringa(ui, tipoSeringa);
+  return {
+    concentracao:   cRes.valor,          // raw mg/mL
+    volumeMl:       vRes.valor,          // raw mL
+    unidades:       ui,                  // raw UI
+    // Arredondar APENAS para exibição
+    concDisplay:    cRes.valor.toFixed(2),
+    volDisplay:     vRes.valor.toFixed(3),
+    uiDisplay:      ui.toFixed(1),
+    excedente:      !lim.ok,
+    msgExcedente:   lim.mensagem || '',
+  };
+}
+
 /* ─── DADOS ───────────────────────────────────────────────── */
 const LOCAIS = ['Abdômen esquerdo', 'Abdômen direito', 'Coxa esquerda', 'Coxa direita', 'Braço esquerdo', 'Braço direito'];
 
@@ -1127,11 +1202,17 @@ function PlanejadorScreen({ perfil }) {
   const janelaValida = diasRest !== null && diasRest <= 4;
   const historico = [...aplicacoes].reverse().slice(0, 8);
 
-  // ── Calcular UI da seringa ──
-  const doseNum = parseFloat(doseInput || dosePerfil);
-  const concNum = parseFloat(perfil?.concentracaoAmpola);
-  const uiCalc = (!isNaN(doseNum) && !isNaN(concNum) && concNum > 0)
-    ? Math.round((doseNum / concNum) * 100) : null;
+  // ── Cálculo farmacológico correto ──
+  // A dose ativa pode vir do input temporário (modal) ou do perfil
+  const _doseAtiva = doseInput || dosePerfil;
+  const calcDose = calcularDoseFarmaco(
+    perfil?.totalAmpola,
+    perfil?.volumeMl,
+    _doseAtiva,
+    seringaTipo,
+  );
+  // UI para a seringa — arredondado apenas para exibição (1 casa)
+  const uiCalc = calcDose ? parseFloat(calcDose.uiDisplay) : null;
 
   return (
     <div className="screen">
@@ -1259,7 +1340,35 @@ function PlanejadorScreen({ perfil }) {
                 </button>
               ))}
             </div>
-            <SeringaAnimada ui={uiCalc} maxUI={seringaTipo} dose={dosePerfil?.replace('mg','')} />
+            {/* Alerta de excedente de capacidade */}
+            {calcDose?.excedente && (
+              <div style={{ background:'#FFF8F0', border:'1.5px solid #E65100', borderRadius:12, padding:'12px 14px', marginBottom:10, display:'flex', gap:10, alignItems:'flex-start' }}>
+                <span style={{ fontSize:18, lineHeight:1.2 }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#E65100', marginBottom:2 }}>Capacidade excedida</div>
+                  <div style={{ fontSize:12, color:'#8A4000', lineHeight:1.5 }}>{calcDose.msgExcedente}</div>
+                </div>
+              </div>
+            )}
+
+            <SeringaAnimada
+              ui={calcDose?.excedente ? seringaTipo : uiCalc}
+              maxUI={seringaTipo}
+              dose={dosePerfil?.replace('mg','')} />
+
+            {/* Detalhes do cálculo */}
+            {calcDose && !calcDose.excedente && (
+              <div style={{ display:'flex', gap:6, marginTop:4 }}>
+                <div style={{ flex:1, background:'var(--copper-pale)', borderRadius:10, padding:'8px 10px', textAlign:'center' }}>
+                  <div style={{ fontSize:9, color:'var(--brown-light)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px' }}>Concentração</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:'var(--brown)', marginTop:1 }}>{calcDose.concDisplay} <span style={{ fontSize:10, fontWeight:500 }}>mg/mL</span></div>
+                </div>
+                <div style={{ flex:1, background:'var(--copper-pale)', borderRadius:10, padding:'8px 10px', textAlign:'center' }}>
+                  <div style={{ fontSize:9, color:'var(--brown-light)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px' }}>Volume</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:'var(--brown)', marginTop:1 }}>{calcDose.volDisplay} <span style={{ fontSize:10, fontWeight:500 }}>mL</span></div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
