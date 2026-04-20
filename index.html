@@ -542,6 +542,57 @@ function Confetti() {
   );
 }
 
+/* ─── SERINGA SVG (selector visual) ──────────────────────── */
+function SeringaSVG({ tipo, selected }) {
+  const cor      = selected ? 'var(--copper)'       : '#8A7060';
+  const barrelBg = selected ? 'rgba(196,136,90,0.1)': 'rgba(250,247,244,0.8)';
+  const stopper  = selected ? 'var(--copper)'       : '#2D1F14';
+
+  const cfg = {
+    30:  { majors:[10,20,30],              minors:[5,15,25] },
+    50:  { majors:[10,20,30,40,50],        minors:[5,15,25,35,45] },
+    100: { majors:[20,40,60,80,100],       minors:[10,30,50,70,90] },
+  }[tipo] || { majors:[20,40,60,80,100], minors:[10,30,50,70,90] };
+
+  const BT = 26;   // barrel top y
+  const BH = 72;   // barrel height
+  const yv = v => BT + (v / tipo) * BH;
+
+  return (
+    <svg width="46" height="122" viewBox="0 0 46 122" style={{ overflow:'visible' }}>
+      {/* ── Agulha ── */}
+      <line x1="23" y1="1" x2="23" y2="15" stroke={cor} strokeWidth="1.1" strokeLinecap="round"/>
+      {/* ── Hub / cap ── */}
+      <path d="M17 15 L29 15 L27 24 L19 24 Z" fill={barrelBg} stroke={cor} strokeWidth="1.2"/>
+      {/* ── Corpo do barril ── */}
+      <rect x="12" y="24" width="22" height="74" rx="2.5" fill={barrelBg} stroke={cor} strokeWidth="1.6"/>
+      {/* ── Êmbolo (stopper) ── */}
+      <rect x="12" y="24" width="22" height="8" rx="2" fill={stopper} opacity="0.9"/>
+      {/* ── Marcações minor ── */}
+      {cfg.minors.map(v => (
+        <line key={v} x1={34} y1={yv(v)} x2={37} y2={yv(v)} stroke={cor} strokeWidth="0.8" opacity="0.5"/>
+      ))}
+      {/* ── Marcações major + números ── */}
+      {cfg.majors.map(v => (
+        <g key={v}>
+          <line x1={34} y1={yv(v)} x2={38} y2={yv(v)} stroke={cor} strokeWidth="1.1"/>
+          <text x={40} y={yv(v)} fontSize="6.2" fill={cor} fontFamily="Inter,sans-serif"
+            dominantBaseline="middle" fontWeight="600">{v}</text>
+        </g>
+      ))}
+      {/* ── Texto UNITS ── */}
+      <text x={34} y={yv(tipo)+10} fontSize="5.5" fill={cor} fontFamily="Inter,sans-serif"
+        dominantBaseline="middle" opacity="0.7">UNITS</text>
+      {/* ── Flanges ── */}
+      <rect x="5"  y="97" width="36" height="4.5" rx="2.2" fill={barrelBg} stroke={cor} strokeWidth="1.2"/>
+      {/* ── Haste do êmbolo ── */}
+      <rect x="21" y="101" width="4"  height="9"   fill={barrelBg} stroke={cor} strokeWidth="1"/>
+      {/* ── Pegador do êmbolo ── */}
+      <rect x="10" y="108" width="26" height="4.5" rx="2" fill={barrelBg} stroke={cor} strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
 /* ─── SERINGA VISUALIZADORA ──────────────────────────────── */
 function SyringeVisualizer({ ui = 25, maxUI = 100, dose, med }) {
   const fillPct = Math.min(100, (ui / maxUI) * 100);
@@ -1089,16 +1140,21 @@ function PlanejadorScreen({ perfil }) {
               <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15 }}>Sua dose desta semana</div>
             </div>
             {/* Seletor de tipo de seringa */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               {[100, 50, 30].map(ui => (
                 <button key={ui} onClick={() => handleSeringaTipo(ui)} style={{
-                  flex: 1, padding: '7px 0', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                  cursor: 'pointer', border: '1.5px solid',
-                  borderColor: seringaTipo === ui ? 'var(--copper)' : 'rgba(45,31,20,0.12)',
-                  background: seringaTipo === ui ? 'var(--copper-pale)' : 'white',
-                  color: seringaTipo === ui ? 'var(--brown)' : '#9A8070',
-                  transition: 'all .18s',
-                }}>U-{ui}</button>
+                  flex: 1, paddingTop: 10, paddingBottom: 8, borderRadius: 16,
+                  cursor: 'pointer', border: '2px solid',
+                  borderColor: seringaTipo === ui ? 'var(--copper)' : 'rgba(45,31,20,0.1)',
+                  background: seringaTipo === ui ? 'rgba(196,136,90,0.07)' : 'white',
+                  transition: 'all .2s cubic-bezier(.34,1.56,.64,1)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  boxShadow: seringaTipo === ui ? '0 2px 10px rgba(196,136,90,0.2)' : 'none',
+                }}>
+                  <SeringaSVG tipo={ui} selected={seringaTipo === ui} />
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.3px',
+                    color: seringaTipo === ui ? 'var(--brown)' : '#9A8070' }}>U-{ui}</span>
+                </button>
               ))}
             </div>
             <p style={{ color: '#8A7060', fontSize: 12, margin: '0 0 0' }}>
