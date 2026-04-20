@@ -923,16 +923,17 @@ function PlanejadorScreen({ perfil }) {
     : 0;
 
   // ── Calendário da semana atual ──
-  const diaSemana = hoje.getDay();
-  const inicioSem7 = new Date(hoje);
-  inicioSem7.setDate(hoje.getDate() - diaSemana);
+  const _hoje = hoje();
+  const diaSemana = _hoje.getDay();
+  const inicioSem7 = new Date(_hoje);
+  inicioSem7.setDate(_hoje.getDate() - diaSemana);
   const letras = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   const mesesPT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const diasCal = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(inicioSem7);
     d.setDate(inicioSem7.getDate() + i);
-    const isHoje = d.toDateString() === hoje.toDateString();
-    const passado = d < hoje && !isHoje;
+    const isHoje = d.toDateString() === _hoje.toDateString();
+    const passado = d < _hoje && !isHoje;
     const isInjecao = proxData && d.toDateString() === proxData.toDateString();
     const foiAplicado = aplicacoes.some(a => new Date(a.ts).toDateString() === d.toDateString());
     return { letra: letras[i], num: d.getDate(), passado, isHoje, isInjecao, foiAplicado };
@@ -946,7 +947,7 @@ function PlanejadorScreen({ perfil }) {
   // ── Registrar ──
   const registrar = () => {
     const nova = {
-      data: hoje.toISOString().split('T')[0],
+      data: _hoje.toISOString().split('T')[0],
       local: LOCAIS[localSel],
       dose: doseInput || dosePerfil || '–',
       ts: new Date().toISOString(),
@@ -1010,7 +1011,7 @@ function PlanejadorScreen({ perfil }) {
         {/* Mini calendário */}
         <div className="card">
           <div style={{ fontWeight: 700, color: 'var(--brown)', fontSize: 15, marginBottom: 12 }}>
-            Semana de {diasCal[0].num}/{String(hoje.getMonth()+1).padStart(2,'0')} — {mesesPT[hoje.getMonth()]}
+            Semana de {diasCal[0].num}/{String(_hoje.getMonth()+1).padStart(2,'0')} — {mesesPT[_hoje.getMonth()]}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {diasCal.map((d, i) => (
